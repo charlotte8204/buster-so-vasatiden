@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avslutande prov – Vasatiden</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#f1f5f9;--card:#fff;--text:#1e293b;--muted:#64748b;--accent:#2563eb;--success:#16a34a;--danger:#dc2626;--warning:#f59e0b;--sidebar-bg:#1e293b;--sidebar-text:#e2e8f0;--radius:10px;--shadow:0 2px 12px rgba(0,0,0,.08)}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:18px;line-height:1.7;color:var(--text);background:var(--bg);display:flex;min-height:100vh}
+.sidebar{width:220px;background:var(--sidebar-bg);color:var(--sidebar-text);padding:20px 0;flex-shrink:0;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;overflow-y:auto}
+.sidebar .logo{padding:0 16px 16px;font-weight:800;font-size:1.1em;border-bottom:1px solid #334155}.sidebar .logo a{color:var(--sidebar-text);text-decoration:none}
+.sidebar nav{padding:12px 0;flex:1}
+.sidebar .section-title{padding:8px 16px;font-size:.7em;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;margin-top:8px}
+.sidebar a{display:flex;align-items:center;gap:8px;padding:7px 16px;color:#cbd5e1;text-decoration:none;font-size:.85em;transition:background .15s}
+.sidebar a:hover{background:#334155}.sidebar a.active{background:var(--accent);color:#fff;font-weight:600}
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:12px 28px;background:var(--card);border-bottom:1px solid #e2e8f0}
+.topbar .breadcrumb{font-size:.8em;color:var(--muted)}.topbar .breadcrumb a{color:var(--accent);text-decoration:none}
+.topbar .timer{font-weight:700;color:var(--accent);font-size:.95em;display:flex;align-items:center;gap:8px}
+.topbar .timer .pause-btn{padding:4px 12px;border:2px solid var(--accent);border-radius:6px;background:var(--card);color:var(--accent);cursor:pointer;font-family:inherit;font-size:.8em;font-weight:600}
+.topbar .timer .pause-btn:hover{background:#dbeafe}
+.topbar .timer .pause-btn.paused{background:var(--warning);color:#fff;border-color:var(--warning)}
+
+.content{max-width:720px;margin:0 auto;padding:28px 32px}
+.content h1{font-size:1.5em;font-weight:800;margin-bottom:4px;color:var(--sidebar-bg)}
+.content .subtitle{font-size:.85em;color:var(--muted);margin-bottom:8px}
+
+.quiz-info{background:#fef3c7;border:2px solid #fbbf24;border-radius:var(--radius);padding:14px 18px;margin-bottom:20px;font-size:.9em;color:#92400e}
+
+/* Intro screen */
+.intro-screen{background:var(--card);border-radius:var(--radius);padding:32px;box-shadow:var(--shadow);text-align:center}
+.intro-screen h2{font-size:1.3em;margin-bottom:12px;color:var(--sidebar-bg)}
+.intro-screen p{font-size:.95em;color:var(--text);margin-bottom:12px;line-height:1.6}
+.intro-screen .info-box{background:#eff6ff;border:2px solid #93c5fd;border-radius:var(--radius);padding:16px 20px;margin:16px 0;text-align:left;font-size:.9em;color:#1e40af}
+.intro-screen .info-box strong{display:block;margin-bottom:4px}
+.start-btn{padding:14px 36px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:1.1em;cursor:pointer;font-family:inherit;font-weight:700;margin-top:16px;transition:background .15s}
+.start-btn:hover{background:#1d4ed8}
+
+/* Section divider */
+.section-divider{display:none;background:var(--card);border-radius:var(--radius);padding:28px;box-shadow:var(--shadow);text-align:center}
+.section-divider.active{display:block}
+.section-divider h2{font-size:1.2em;margin-bottom:8px;color:var(--sidebar-bg)}
+.section-divider p{font-size:.9em;color:var(--muted);margin-bottom:16px}
+.section-divider .continue-btn{padding:12px 28px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:1em;cursor:pointer;font-family:inherit;font-weight:600}
+
+/* Question stepper */
+.q-progress{display:flex;gap:5px;margin-bottom:20px;flex-wrap:wrap}
+.q-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.75em;border:2px solid #e2e8f0;color:var(--muted);background:var(--card);cursor:pointer;transition:all .15s}
+.q-dot.active{border-color:var(--accent);color:var(--accent);background:#dbeafe}
+.q-dot.correct{border-color:var(--success);color:#fff;background:var(--success)}
+.q-dot.wrong{border-color:var(--danger);color:#fff;background:var(--danger)}
+.q-dot.partial{border-color:var(--warning);color:#fff;background:var(--warning)}
+.q-dot.section-a{border-left:3px solid var(--accent)}
+
+/* Part labels */
+.part-label{font-size:.7em;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:4px 0;font-weight:700;margin-bottom:4px}
+
+/* Question cards */
+.q-card{display:none;background:var(--card);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);margin-bottom:16px}
+.q-card.active{display:block}
+.q-card h3{font-size:1em;margin-bottom:14px;color:var(--sidebar-bg)}
+.badge{display:inline-block;font-size:.65em;padding:2px 8px;border-radius:4px;font-weight:700;margin-bottom:8px;text-transform:uppercase}
+.badge-e{background:#dcfce7;color:var(--success)}
+.badge-c{background:#dbeafe;color:var(--accent)}
+.badge-a{background:#fef3c7;color:#92400e}
+.badge-part{background:#f1f5f9;color:var(--muted);margin-left:4px}
+
+.options{display:flex;flex-direction:column;gap:8px}
+.option-btn{display:block;width:100%;text-align:left;padding:12px 16px;border:2px solid #e2e8f0;border-radius:8px;background:var(--card);cursor:pointer;font-size:.9em;font-family:inherit;transition:border-color .15s,background .15s;line-height:1.5}
+.option-btn:hover:not(:disabled){border-color:var(--accent);background:#f0f6ff}
+.option-btn.correct{border-color:var(--success);background:#dcfce7}.option-btn.wrong{border-color:var(--danger);background:#fee2e2}.option-btn:disabled{cursor:default}
+
+/* Fill in */
+.fill-input{width:220px;padding:8px 12px;border:2px solid #e2e8f0;border-radius:6px;font-family:inherit;font-size:.9em}
+.fill-input:focus{border-color:var(--accent);outline:none}
+.fill-input.correct{border-color:var(--success);background:#dcfce7}
+.fill-input.wrong{border-color:var(--danger);background:#fee2e2}
+.fill-submit{padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-size:.85em;font-weight:600;margin-left:8px}
+
+/* True/false */
+.tf-group{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.tf-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid #e2e8f0;border-radius:8px;background:#fafafa;font-size:.9em;line-height:1.4}
+.tf-item .tf-text{flex:1}
+.tf-item .tf-btns{display:flex;gap:6px;flex-shrink:0}
+.tf-btn{padding:6px 14px;border:2px solid #e2e8f0;border-radius:6px;background:var(--card);cursor:pointer;font-family:inherit;font-size:.8em;font-weight:600;transition:all .15s}
+.tf-btn:hover:not(:disabled){border-color:var(--accent);background:#dbeafe}
+.tf-btn.selected{border-color:var(--accent);background:#dbeafe;color:var(--accent)}
+.tf-btn.correct-answer{border-color:var(--success);background:#dcfce7;color:#166534}
+.tf-btn.wrong-answer{border-color:var(--danger);background:#fee2e2;color:#991b1b}
+.tf-btn:disabled{cursor:default;opacity:.7}
+.tf-check-btn{padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:.9em;cursor:pointer;font-family:inherit;font-weight:600;margin-top:10px}
+.tf-check-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* Open answer */
+.open-answer{width:100%;min-height:80px;padding:12px;border:2px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:.9em;resize:vertical;line-height:1.5}
+.open-answer:focus{border-color:var(--accent);outline:none}
+.word-count{font-size:.75em;color:var(--muted);margin-top:4px}
+.submit-open{margin-top:10px;padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:.9em;cursor:pointer;font-family:inherit;font-weight:600}
+.submit-open:disabled{opacity:.4;cursor:not-allowed}
+.compare-box{display:none;margin-top:14px;padding:16px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0}
+.compare-box.show{display:block}
+.compare-box h4{font-size:.85em;margin-bottom:8px;color:var(--muted)}
+.compare-box .model-answer{background:#f0fdf4;padding:10px;border-radius:6px;font-size:.9em;margin-top:8px;line-height:1.5}
+.self-assess{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
+.self-assess button{padding:8px 16px;border-radius:6px;border:2px solid #e2e8f0;background:var(--card);cursor:pointer;font-family:inherit;font-size:.85em;font-weight:600}
+.self-assess .yes-btn:hover{border-color:var(--success);background:#dcfce7}
+
+.feedback{margin-top:12px;padding:12px 16px;border-radius:8px;font-size:.9em;display:none}
+.feedback.show{display:block}
+.feedback.correct{background:#dcfce7;color:#166534}
+.feedback.wrong{background:#fee2e2;color:#991b1b}
+
+.next-q-btn{margin-top:14px;padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:.9em;cursor:pointer;font-family:inherit;font-weight:600;display:none}
+.next-q-btn.show{display:inline-block}
+
+/* Results */
+.results{display:none;background:var(--card);border-radius:var(--radius);padding:32px;box-shadow:var(--shadow);text-align:center}
+.results.show{display:block}
+.results h2{font-size:1.4em;margin-bottom:16px}
+.results .score{font-size:2.5em;font-weight:800;margin:12px 0}
+.results .score.great{color:var(--success)}
+.results .score.good{color:var(--accent)}
+.results .score.ok{color:var(--warning)}
+.results .detail{font-size:.9em;color:var(--muted);margin-bottom:20px}
+.result-section-title{font-size:.85em;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:16px 0 8px;text-align:left}
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 16px;text-align:left}
+.result-item{padding:10px 14px;border-radius:8px;font-size:.85em}
+.result-item.right{background:#dcfce7;color:#166534}
+.result-item.wrong{background:#fee2e2;color:#991b1b}
+.result-item.partial{background:#fef3c7;color:#92400e}
+.result-feedback{margin-top:20px;padding:18px;background:#f8fafc;border-radius:var(--radius);font-size:1em;line-height:1.6}
+.result-actions{display:flex;justify-content:center;gap:12px;margin-top:20px;flex-wrap:wrap}
+.result-actions .nav-btn{padding:12px 24px;border-radius:8px;font-size:.9em;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;border:none;display:inline-flex;align-items:center;gap:6px}
+.result-actions .nav-btn.secondary{background:#f1f5f9;color:var(--text)}.result-actions .nav-btn.secondary:hover{background:#e2e8f0}
+.result-actions .nav-btn.primary{background:var(--success);color:#fff}.result-actions .nav-btn.primary:hover{background:#15803d}
+
+/* Pause overlay */
+.pause-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(30,41,59,.92);z-index:1000;justify-content:center;align-items:center;flex-direction:column;color:#fff}
+.pause-overlay.show{display:flex}
+.pause-overlay h2{font-size:1.5em;margin-bottom:12px}
+.pause-overlay p{font-size:.95em;color:#94a3b8;margin-bottom:20px}
+.pause-overlay .resume-btn{padding:14px 32px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:1.1em;cursor:pointer;font-family:inherit;font-weight:700}
+
+@media(max-width:960px){.sidebar{width:180px}.main{margin-left:180px}}
+@media(max-width:768px){.sidebar{display:none}.main{margin-left:0}.content{padding:20px}}
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="logo"><a href="index.html">Vasatiden</a></div>
+  <nav>
+    <div class="section-title">Avslutande prov</div>
+    <a href="prov.html" class="active"><span class="icon">&#9654;</span> Provet</a>
+  </nav>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div class="breadcrumb"><a href="index.html">Vasatiden</a> &rsaquo; Avslutande prov</div>
+    <div class="timer" id="timerArea" style="display:none">
+      <span id="timerDisplay">00:00</span>
+      <button class="pause-btn" id="pauseBtn" onclick="togglePause()">Pausa</button>
+    </div>
+  </div>
+
+  <div class="content" id="contentArea">
+
+    <!-- INTRO SCREEN -->
+    <div class="intro-screen" id="introScreen">
+      <h2>Är du redo för provet, Buster?</h2>
+      <p>Du har lärt dig massor om Vasatiden! Nu är det dags att visa vad du kan. Det här är ditt avslutande prov &ndash; behandla det som ett riktigt prov.</p>
+      <div class="info-box">
+        <strong>Så här fungerar provet:</strong>
+        Provet har två delar: <strong>Faktadel</strong> (10 frågor, blandade E- och C-nivå) och <strong>Resonemangsdel</strong> (5 frågor, C- och A-nivå). Du får en fråga i taget. Ta den tid du behöver &ndash; det finns ingen tidsgräns. Du kan pausa när du vill.
+      </div>
+      <p style="font-size:.85em;color:var(--muted);">Tips: Läs varje fråga noga innan du svarar. Du kan inte ändra ditt svar efteråt.</p>
+      <button class="start-btn" onclick="startExam()">Starta provet</button>
+    </div>
+
+    <!-- PROGRESS DOTS (hidden until start) -->
+    <div id="examContainer" style="display:none">
+
+      <h1>Avslutande prov: Vasatiden</h1>
+      <div class="subtitle">Visa vad du kan, Buster!</div>
+
+      <div class="q-progress" id="qProgress">
+        <div class="q-dot active" id="dot0">1</div>
+        <div class="q-dot" id="dot1">2</div>
+        <div class="q-dot" id="dot2">3</div>
+        <div class="q-dot" id="dot3">4</div>
+        <div class="q-dot" id="dot4">5</div>
+        <div class="q-dot" id="dot5">6</div>
+        <div class="q-dot" id="dot6">7</div>
+        <div class="q-dot" id="dot7">8</div>
+        <div class="q-dot" id="dot8">9</div>
+        <div class="q-dot" id="dot9">10</div>
+        <div class="q-dot section-a" id="dot10">11</div>
+        <div class="q-dot" id="dot11">12</div>
+        <div class="q-dot" id="dot12">13</div>
+        <div class="q-dot" id="dot13">14</div>
+        <div class="q-dot" id="dot14">15</div>
+      </div>
+
+      <!-- ======================= -->
+      <!-- FAKTADEL: Frågor 1-10   -->
+      <!-- ======================= -->
+
+      <!-- Q1: E, flerval -->
+      <div class="q-card active" id="q0">
+        <span class="badge badge-e">Nivå E</span><span class="badge badge-part">Faktadel</span>
+        <h3>Fråga 1: Vilket år blev Gustav Vasa kung?</h3>
+        <div class="options">
+          <button class="option-btn" onclick="answerMC(0,0)">1397</button>
+          <button class="option-btn" onclick="answerMC(0,1)">1523</button>
+          <button class="option-btn" onclick="answerMC(0,2)">1560</button>
+        </div>
+        <div class="feedback correct" id="fb0-correct">Rätt! Gustav Vasa valdes till kung 1523.</div>
+        <div class="feedback wrong" id="fb0-wrong">Det rätta svaret är 1523.</div>
+        <button class="next-q-btn" id="next0" onclick="nextQ(1)">Nästa fråga &rarr;</button>
+      </div>
+
+      <!-- Q2: E, flerval -->
+      <div class="q-card" id="q1">
+        <span class="badge badge-e">Nivå E</span><span class="badge badge-part">Faktadel</span>
+        <h3>Fråga 2: Vad hette unionen mellan Sverige, Danmark och Norge?</h3>
+        <div class="options">
+          <button class="option-btn" onclick="answerMC(1,0)">Vasaunionen</button>
+          <button class="option-btn" onclick="answerMC(1,1)">Kalmarunionen</button>
+          <button class="option-btn" onclick="answerMC(1,2)">Nordiska unionen</button>
+        </div>
+        <div class="feedback correct" id="fb1-correct">Rätt! Kalmarunionen bildades 1397.</div>
+        <div class="feedback wrong" id="fb1-wrong">Det rätta svaret är Kalmarunionen.</div>
+        <button class="next-q-btn" id="next1" onclick="nextQ(2)">Nästa fråga &rarr;</button>
+      </div>
+
+      <!-- Q3: C, flerval -->
+      <div class="q-card" id="q2">
+        <span class="badge badge-c">Nivå C</span><span class="badge badge-part">Faktadel</span>
+        <h3>Fråga 3: Varför blev det Stockholms blodbad?</h3>
+        <div class="options">
+          <button class="option-btn" onclick="answerMC(2,0)">Folk var hungriga</button>
+          <button class="option-btn" onclick="answerMC(2,1)">Kung Kristian II ville straffa sina motståndare och skrämma det svenska folket till lydnad</button>
+          <button class="option-btn" onclick="answerMC(2,2)">Det var en olycka</button>
+        </div>
+        <div class="feedback correct" id="fb2-correct">Rätt! Kristian II använde blodbadet som ett sätt att krossa motståndet.</div>
+        <div class="feedback wrong" id="fb2-wrong">Kristian II ville straffa sina motståndare och skrämma folket till lydnad.</div>
+        <button class="next-q-btn" id="next2" onclick="nextQ(3)">Nästa fråga &rarr;</button>
+      </div>
+
+      <!-- Q4: E, fyll-i-lucka -->
+      <div class="q-card" id="q3">
+        <span class="badge badge-e">Nivå E</span><span class="badge badge-part">Faktadel</span>
+        <h3>Fråga 4: Flickor som arbetade hos annan familj kallades ___</h3>
+        <div style="display:flex;align-items:center;margin-top:10px">
+          <input class="fill-input" id="fill3" type="text" placeholder="Skriv här...">
+          <button class="fill-submit" onclick="answerFill(3)">Kolla</button>
+        </div>
+        <div class="feedback correct" id="fb3-correct">Rätt! De kallades pigor.</div>
+        <div class="feedback wrong" id="fb3-wrong">Svaret är "piga" (eller pigor).</div>
+        <button class="next-q-btn" id="next3" onclick="nextQ(4)">Nästa fråga &rarr;</button>
+      </div>
+
+      <!-- Q5: C, flerval -->
+      <div class="q-card" id="q4">
+        <span class="badge badge-c">Nivå C</span><span class="badge badge-part">Faktadel</span>
+        <h3>Fråga 5: Vad var reformationen?</h3>
+        <div class="options">
+          <button class="option-btn" onclick="answerMC(4,0)">En fest</button>
+          <button class="option-btn" onclick="answerMC(4,1)">Förändringen då Sverige gick från katolskt till protestantiskt &ndash; kungen tog kyrkans makt och rikedomar</button>
+          <button class="option-btn" onclick="answerMC(4,2)">En ny lag om mat</button>
+        </div>
+        <div class="feedback correct" id="fb4-correct">Rätt! Reformationen innebar att Sverige blev protestantiskt och kungen tog kyrkans makt.</div>
+        <div class="feedback wrong" id="fb4-wrong">Reformationen var förändringen då Sverige gick från katolskt till protestantiskt &ndash; kungen tog kyrkans makt och rikedomar.</div>
+        <button class="next-q-btn" id="next4" onclick="nextQ(5)">Nästa fråga &rarr;</button>
+      </div>
+
+      <!-- Q6: E, flerval -->
+      <div class="q-card" id="q5">
+        <span class="badge badge-e">Nivå E</span><span class="badge badge-part">Faktadel</span>
+        <h3>Fråga 6: Vem ledde Dackeupproret?</h3>
+        <div class="options">
+          <button class="option-btn" onclick="answerMC(5,0)">Gustav Vasa</button>
+          <button class="option-btn" onclick="answerMC(5,1)">Nils Dacke</button>
+          <button class="option-btn" onclick="answerMC(5,2)">Martin Luther</button>
+        </div>
+        <div class="feedback correct" id="fb5-correct">Rätt! Nils Dacke ledde det största upproret mot Gustav Vasa.</div>
+        <div class="feedback wrong" id="fb5-wrong">Det rätta svaret är Nils Dacke.</div>
+        <button class="next-q-btn" id="next5" onclick="nextQ(6)">Nästa fråga &rarr;</button>
+      </div>
+
+      <!-- Q7: C, flerval -->
+      <div class="q-card" id="q6">
+        <span class="badge badge-c">Nivå C</span><span class="badge badge-part">Faktadel</span>
+        <h3>Fråga 7: Varför var Gustav Vasa en mästare på propaganda?</h3>
+        <div class="options">
+          <button class="option-btn" onclick="answerMC(6,0)">Han var konstnär</button>
+          <button class="option-btn" onclick="answerMC(6,1)">Han anställde historieskrivare som överdrev hans hjältedåd och spred falska rykten om sina fiender</button>
+          <button class="option-btn" onclick="answerMC(6,2)">Han var bra på att sjunga</button>
+        </div>
+        <div class="feedback correct" id="fb6-correct">Rätt! Gustav Vasa använde historieskrivare och propaganda för att forma sin bild.</div>
+        <div class="feedback wrong" id="fb6-wrong">Gustav Vasa anställde historieskrivare som överdrev hans hjältedåd och spred falska rykten om sina fiender.</div>
+        <button class="next-q-btn" id="next6" onclick="nextQ(7)">Nästa fråga &rarr;</button>
+      </div>
+
+      <!-- Q8: E, fyll-i-lucka -->
+      <div class="q-card" id="q7">
+        <span class="badge badge-e">Nivå E</span><span class="badge badge-part">Faktadel</span>
+        <h3>Fråga 8: Gustav Vasas äldsta son som blev kung hette Erik ___</h3>
+        <div style="display:flex;align-items:center;margin-top:10px">
+          <input class="fill-input" id="fill7" type="text" placeholder="Skriv här...">
+          <button class="fill-submit" onclick="answerFill(7)">Kolla</button>
+        </div>
+        <div class="feedback correct" id="fb7-correct">Rätt! Erik XIV (den fjortonde).</div>
+        <div class="feedback wrong" id="fb7-wrong">Svaret är XIV (den fjortonde).</div>
+        <button class="next-q-btn" id="next7" onclick="nextQ(8)">Nästa fråga &rarr;</button>
+      </div>
+
+      <!-- Q9: C, flerval -->
+      <div class="q-card" id="q8">
+        <span class="badge badge-c">Nivå C</span><span class="badge badge-part">Faktadel</span>
+        <h3>Fråga 9: Vad var Klubbekriget?</h3>
+        <div class="options">
+          <button class="option-btn" onclick="answerMC(8,0)">Ett krig om kläder</button>
+          <button class="option-btn" onclick="answerMC(8,1)">Ett bondeuppror i Finland 1596 mot att kungen ville återinföra katolicismen</button>
+          <button class="option-btn" onclick="answerMC(8,2)">Ett krig mellan Sverige och Danmark</button>
+        </div>
+        <div class="feedback correct" id="fb8-correct">Rätt! Klubbekriget var ett bondeuppror i Finland 1596.</div>
+        <div class="feedback wrong" id="fb8-wrong">Klubbekriget var ett bondeuppror i Finland 1596 mot att kungen ville återinföra katolicismen.</div>
+        <button class="next-q-btn" id="next8" onclick="nextQ(9)">Nästa fråga &rarr;</button>
+      </div>
+
+      <!-- Q10: E, sant/falskt -->
+      <div class="q-card" id="q9">
+        <span class="badge badge-e">Nivå E</span><span class="badge badge-part">Faktadel</span>
+        <h3>Fråga 10: Sant eller falskt? Markera rätt svar för varje påstående.</h3>
+        <div class="tf-group" id="tfGroup">
+          <div class="tf-item" id="tf0">
+            <span class="tf-text">&laquo;De flesta bönder i Sverige var fattiga, men fria.&raquo;</span>
+            <div class="tf-btns">
+              <button class="tf-btn" onclick="selectTF(0,'sant')">Sant</button>
+              <button class="tf-btn" onclick="selectTF(0,'falskt')">Falskt</button>
+            </div>
+          </div>
+          <div class="tf-item" id="tf1">
+            <span class="tf-text">&laquo;Många var missnöjda med Kalmarunionen.&raquo;</span>
+            <div class="tf-btns">
+              <button class="tf-btn" onclick="selectTF(1,'sant')">Sant</button>
+              <button class="tf-btn" onclick="selectTF(1,'falskt')">Falskt</button>
+            </div>
+          </div>
+          <div class="tf-item" id="tf2">
+            <span class="tf-text">&laquo;Under Stockholms blodbad dödades de som stöttade Kristian II.&raquo;</span>
+            <div class="tf-btns">
+              <button class="tf-btn" onclick="selectTF(2,'sant')">Sant</button>
+              <button class="tf-btn" onclick="selectTF(2,'falskt')">Falskt</button>
+            </div>
+          </div>
+          <div class="tf-item" id="tf3">
+            <span class="tf-text">&laquo;Protestantismen var en protest mot den katolska kyrkan.&raquo;</span>
+            <div class="tf-btns">
+              <button class="tf-btn" onclick="selectTF(3,'sant')">Sant</button>
+              <button class="tf-btn" onclick="selectTF(3,'falskt')">Falskt</button>
+            </div>
+          </div>
+        </div>
+        <button class="tf-check-btn" id="tfCheckBtn" onclick="checkTF()" disabled>Rätta alla påståenden</button>
+        <div class="feedback correct" id="fb9-correct">Alla rätt! Bra jobbat, Buster!</div>
+        <div class="feedback wrong" id="fb9-wrong"></div>
+        <button class="next-q-btn" id="next9" onclick="showSectionDivider()">Vidare till resonemangsdelen &rarr;</button>
+      </div>
+
+      <!-- SECTION DIVIDER -->
+      <div class="section-divider" id="sectionDivider">
+        <h2>Del 2: Resonemangsdel</h2>
+        <p>Bra jobbat med faktadelen, Buster! Nu kommer 5 frågor där du ska resonera och förklara. Skriv med egna ord &ndash; det finns inga exakt rätta svar, men visa att du förstår.</p>
+        <p style="font-size:.85em;color:var(--muted);margin-bottom:16px">Poäng: +20 per fråga</p>
+        <button class="continue-btn" onclick="startPart2()">Starta resonemangsdelen</button>
+      </div>
+
+      <!-- ============================== -->
+      <!-- RESONEMANGSDEL: Frågor 11-15   -->
+      <!-- ============================== -->
+
+      <!-- Q11: C, öppen -->
+      <div class="q-card" id="q10">
+        <span class="badge badge-c">Nivå C</span><span class="badge badge-part">Resonemangsdel</span>
+        <h3>Fråga 11: Förklara varför svenska bönder var speciella jämfört med bönder i många andra europeiska länder.</h3>
+        <textarea class="open-answer" id="open10" placeholder="Skriv ditt svar här..." oninput="updateWC(10,10)"></textarea>
+        <div class="word-count" id="wc10">0 ord (minst 10)</div>
+        <button class="submit-open" id="submit10" onclick="submitOpen(10)" disabled>Visa facit</button>
+        <div class="compare-box" id="compare10">
+          <h4>Exempelsvar:</h4>
+          <div class="model-answer">Svenska bönder var fria och kunde äga sin egen mark, till skillnad från livegna bönder i andra länder som närmast var som slavar. De kunde också göra uppror och hade viss politisk makt.</div>
+          <div class="self-assess" id="sa10">
+            <span style="font-size:.85em;color:var(--muted);margin-right:4px">Hur gick det?</span>
+            <button class="yes-btn" onclick="selfAssess(10,true)">Jag fick med det viktiga</button>
+            <button class="yes-btn" onclick="selfAssess(10,false)" style="background:#fefce8">Jag missade en del</button>
+          </div>
+        </div>
+        <button class="next-q-btn" id="next10" onclick="nextQ(11)">Nästa fråga &rarr;</button>
+      </div>
+
+      <!-- Q12: A, öppen -->
+      <div class="q-card" id="q11">
+        <span class="badge badge-a">Nivå A</span><span class="badge badge-part">Resonemangsdel</span>
+        <h3>Fråga 12: Gustav Vasa tog kyrkans silver och jord. Var det rätt eller fel? Resonera och ge argument för BÅDA sidor.</h3>
+        <textarea class="open-answer" id="open11" placeholder="Skriv ditt resonemang här..." oninput="updateWC(11,20)"></textarea>
+        <div class="word-count" id="wc11">0 ord (minst 20)</div>
+        <button class="submit-open" id="submit11" onclick="submitOpen(11)" disabled>Visa facit</button>
+        <div class="compare-box" id="compare11">
+          <h4>Exempelsvar:</h4>
+          <div class="model-answer">Argument för: Sverige behövde pengarna, kyrkan hade för mycket makt, reformationen var en religiös rörelse som hade stöd. Argument emot: Gustav Vasa använde religion som ursäkt för att berika sig själv, han tvingade folk byta tro, och han slog ner alla som protesterade.</div>
+          <div class="self-assess" id="sa11">
+            <span style="font-size:.85em;color:var(--muted);margin-right:4px">Hur gick det?</span>
+            <button class="yes-btn" onclick="selfAssess(11,true)">Jag fick med det viktiga</button>
+            <button class="yes-btn" onclick="selfAssess(11,false)" style="background:#fefce8">Jag missade en del</button>
+          </div>
+        </div>
+        <button class="next-q-btn" id="next11" onclick="nextQ(12)">Nästa fråga &rarr;</button>
+      </div>
+
+      <!-- Q13: A, öppen -->
+      <div class="q-card" id="q12">
+        <span class="badge badge-a">Nivå A</span><span class="badge badge-part">Resonemangsdel</span>
+        <h3>Fråga 13: Varför tror du att så många uppror startade under Vasatiden? Vad hade upproren gemensamt?</h3>
+        <textarea class="open-answer" id="open12" placeholder="Skriv ditt resonemang här..." oninput="updateWC(12,20)"></textarea>
+        <div class="word-count" id="wc12">0 ord (minst 20)</div>
+        <button class="submit-open" id="submit12" onclick="submitOpen(12)" disabled>Visa facit</button>
+        <div class="compare-box" id="compare12">
+          <h4>Exempelsvar:</h4>
+          <div class="model-answer">Upproren startade för att Gustav Vasa centraliserade makten och tog resurser från folk. Gemensamt: bönderna kände sig orättvist behandlade, de förlorade rättigheter eller ägodelar, och de var villiga att riskera sina liv för att försvara det de hade. Klockupproret (klockor), Dackeupproret (skatter/religion), Klubbekriget (religion).</div>
+          <div class="self-assess" id="sa12">
+            <span style="font-size:.85em;color:var(--muted);margin-right:4px">Hur gick det?</span>
+            <button class="yes-btn" onclick="selfAssess(12,true)">Jag fick med det viktiga</button>
+            <button class="yes-btn" onclick="selfAssess(12,false)" style="background:#fefce8">Jag missade en del</button>
+          </div>
+        </div>
+        <button class="next-q-btn" id="next12" onclick="nextQ(13)">Nästa fråga &rarr;</button>
+      </div>
+
+      <!-- Q14: C, öppen -->
+      <div class="q-card" id="q13">
+        <span class="badge badge-c">Nivå C</span><span class="badge badge-part">Resonemangsdel</span>
+        <h3>Fråga 14: Du hittar en text skriven av Gustav Vasa om Nils Dacke. Vilka tre frågor bör du ställa dig innan du litar på texten?</h3>
+        <textarea class="open-answer" id="open13" placeholder="Skriv dina tre frågor här..." oninput="updateWC(13,10)"></textarea>
+        <div class="word-count" id="wc13">0 ord (minst 10)</div>
+        <button class="submit-open" id="submit13" onclick="submitOpen(13)" disabled>Visa facit</button>
+        <div class="compare-box" id="compare13">
+          <h4>Exempelsvar:</h4>
+          <div class="model-answer">1) Vem skrev texten och varför? (Gustav Vasa &ndash; fiende till Dacke) 2) Har skribenten anledning att överdriva eller ljuga? (Ja, propaganda) 3) Finns det andra källor som bekräftar samma sak? (Kolla oberoende källor)</div>
+          <div class="self-assess" id="sa13">
+            <span style="font-size:.85em;color:var(--muted);margin-right:4px">Hur gick det?</span>
+            <button class="yes-btn" onclick="selfAssess(13,true)">Jag fick med det viktiga</button>
+            <button class="yes-btn" onclick="selfAssess(13,false)" style="background:#fefce8">Jag missade en del</button>
+          </div>
+        </div>
+        <button class="next-q-btn" id="next13" onclick="nextQ(14)">Nästa fråga &rarr;</button>
+      </div>
+
+      <!-- Q15: A, öppen -->
+      <div class="q-card" id="q14">
+        <span class="badge badge-a">Nivå A</span><span class="badge badge-part">Resonemangsdel</span>
+        <h3>Fråga 15: Vad tror du att de flesta svenskar på 1500-talet hade hållit med om &ndash; David som säger &laquo;det är ju mycket bättre att en kung väljs av folket&raquo; eller Thelma som säger &laquo;det är enklare att den äldsta sonen ärver tronen&raquo;? Förklara varför och vem du själv håller med.</h3>
+        <textarea class="open-answer" id="open14" placeholder="Skriv ditt resonemang här..." oninput="updateWC(14,20)"></textarea>
+        <div class="word-count" id="wc14">0 ord (minst 20)</div>
+        <button class="submit-open" id="submit14" onclick="submitOpen(14)" disabled>Visa facit</button>
+        <div class="compare-box" id="compare14">
+          <h4>Exempelsvar:</h4>
+          <div class="model-answer">De flesta bönder hade troligen hållit med David &ndash; de var vana vid att ha inflytande och ogillade att makten togs ifrån dem. Adeln kanske föredrog Thelmas syn &ndash; de kunde tjäna på att vara nära en ärftlig kung. Idag har vi demokrati, så Davids synsätt känns mer modernt.</div>
+          <div class="self-assess" id="sa14">
+            <span style="font-size:.85em;color:var(--muted);margin-right:4px">Hur gick det?</span>
+            <button class="yes-btn" onclick="selfAssess(14,true)">Jag fick med det viktiga</button>
+            <button class="yes-btn" onclick="selfAssess(14,false)" style="background:#fefce8">Jag missade en del</button>
+          </div>
+        </div>
+        <button class="next-q-btn" id="next14" onclick="showResults()">Se resultat &rarr;</button>
+      </div>
+
+      <!-- RESULTS -->
+      <div class="results" id="resultsBox">
+        <h2>Provresultat: Vasatiden</h2>
+        <div class="score" id="scoreText"></div>
+        <div class="detail" id="scoreDetail"></div>
+
+        <div class="result-section-title">Faktadel (fråga 1&ndash;10)</div>
+        <div class="result-grid" id="resultGridFakta"></div>
+
+        <div class="result-section-title">Resonemangsdel (fråga 11&ndash;15)</div>
+        <div class="result-grid" id="resultGridResonemang"></div>
+
+        <div class="result-feedback" id="resultFeedback"></div>
+
+        <div class="result-actions">
+          <button class="nav-btn secondary" onclick="resetExam()">Gör om provet</button>
+          <a href="index.html" class="nav-btn primary">Tillbaka till översikten &rarr;</a>
+        </div>
+      </div>
+
+    </div><!-- /examContainer -->
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- Pause overlay -->
+<div class="pause-overlay" id="pauseOverlay">
+  <h2>Provet är pausat</h2>
+  <p>Ta en paus, Buster. Provet väntar tills du är redo.</p>
+  <button class="resume-btn" onclick="togglePause()">Fortsätt provet</button>
+</div>
+
+<script>
+const PREFIX='buster-vasatiden-';
+const PAGE_ID='prov';
+const TOTAL_Q=15;
+const FAKTA_COUNT=10;
+const RESO_COUNT=5;
+
+let currentQ=0;
+let qResults=new Array(TOTAL_Q).fill(null);
+let qPoints=new Array(TOTAL_Q).fill(0);
+let totalPoints=0;
+let startTime=0;
+let elapsedBeforePause=0;
+let isPaused=false;
+let timerInterval=null;
+let examStarted=false;
+
+// TF state
+let tfAnswers=[null,null,null,null];
+const TF_CORRECT=['sant','sant','falskt','sant'];
+
+// MC correct indices: qIdx -> correct option index
+const MC_CORRECT={0:1, 1:1, 2:1, 4:1, 5:1, 6:1, 8:1};
+
+// Fill correct answers
+const FILL_CORRECT={
+  3: ['piga','pigor','pigan','pigorna'],
+  7: ['xiv','14','den fjortonde','fjortonde']
+};
+
+// Open question min words
+const OPEN_MIN={10:10, 11:20, 12:20, 13:10, 14:20};
+
+// ---- TIMER ----
+function startTimer(){
+  startTime=Date.now();
+  timerInterval=setInterval(updateTimer, 1000);
+  document.getElementById('timerArea').style.display='flex';
+}
+function updateTimer(){
+  if(isPaused)return;
+  const elapsed=elapsedBeforePause+Math.floor((Date.now()-startTime)/1000);
+  const m=Math.floor(elapsed/60);
+  const s=elapsed%60;
+  document.getElementById('timerDisplay').textContent=
+    String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+function getElapsedSeconds(){
+  if(!examStarted)return 0;
+  return elapsedBeforePause+Math.floor((Date.now()-startTime)/1000);
+}
+function togglePause(){
+  if(!isPaused){
+    isPaused=true;
+    elapsedBeforePause+=Math.floor((Date.now()-startTime)/1000);
+    document.getElementById('pauseBtn').textContent='Fortsätt';
+    document.getElementById('pauseBtn').classList.add('paused');
+    document.getElementById('pauseOverlay').classList.add('show');
+  } else {
+    isPaused=false;
+    startTime=Date.now();
+    document.getElementById('pauseBtn').textContent='Pausa';
+    document.getElementById('pauseBtn').classList.remove('paused');
+    document.getElementById('pauseOverlay').classList.remove('show');
+  }
+}
+
+// ---- START ----
+function startExam(){
+  document.getElementById('introScreen').style.display='none';
+  document.getElementById('examContainer').style.display='block';
+  examStarted=true;
+  startTimer();
+}
+
+// ---- MC ----
+function answerMC(qIdx, choice){
+  const card=document.getElementById('q'+qIdx);
+  const btns=card.querySelectorAll('.option-btn');
+  if(btns[0].disabled)return;
+
+  const correct=MC_CORRECT[qIdx]===choice;
+  if(correct){
+    btns[choice].classList.add('correct');
+    document.getElementById('fb'+qIdx+'-correct').classList.add('show');
+    qResults[qIdx]=true;
+    qPoints[qIdx]=10;
+    totalPoints+=10;
+  } else {
+    btns[choice].classList.add('wrong');
+    btns[MC_CORRECT[qIdx]].classList.add('correct');
+    document.getElementById('fb'+qIdx+'-wrong').classList.add('show');
+    qResults[qIdx]=false;
+    qPoints[qIdx]=0;
+  }
+  btns.forEach(b=>b.disabled=true);
+  updateDot(qIdx, qResults[qIdx]);
+  document.getElementById('next'+qIdx).classList.add('show');
+  saveAnswer(qIdx);
+}
+
+// ---- FILL ----
+function answerFill(qIdx){
+  const input=document.getElementById('fill'+qIdx);
+  const val=input.value.trim().toLowerCase();
+  if(!val)return;
+
+  const accepted=FILL_CORRECT[qIdx];
+  const correct=accepted.some(a=>val.includes(a)||a.includes(val));
+  if(correct){
+    input.classList.add('correct');
+    document.getElementById('fb'+qIdx+'-correct').classList.add('show');
+    qResults[qIdx]=true;
+    qPoints[qIdx]=10;
+    totalPoints+=10;
+  } else {
+    input.classList.add('wrong');
+    document.getElementById('fb'+qIdx+'-wrong').classList.add('show');
+    qResults[qIdx]=false;
+    qPoints[qIdx]=0;
+  }
+  input.disabled=true;
+  updateDot(qIdx, qResults[qIdx]);
+  document.getElementById('next'+qIdx).classList.add('show');
+  saveAnswer(qIdx);
+}
+
+// ---- TRUE/FALSE ----
+function selectTF(idx, val){
+  tfAnswers[idx]=val;
+  const item=document.getElementById('tf'+idx);
+  const btns=item.querySelectorAll('.tf-btn');
+  btns.forEach(b=>{
+    b.classList.remove('selected');
+    if(b.textContent.toLowerCase()===val) b.classList.add('selected');
+  });
+  // Enable check button if all answered
+  if(tfAnswers.every(a=>a!==null)){
+    document.getElementById('tfCheckBtn').disabled=false;
+  }
+}
+
+function checkTF(){
+  let correctCount=0;
+  for(let i=0;i<4;i++){
+    const item=document.getElementById('tf'+i);
+    const btns=item.querySelectorAll('.tf-btn');
+    btns.forEach(b=>b.disabled=true);
+
+    if(tfAnswers[i]===TF_CORRECT[i]){
+      correctCount++;
+      btns.forEach(b=>{
+        if(b.classList.contains('selected')) b.classList.add('correct-answer');
+      });
+    } else {
+      btns.forEach(b=>{
+        if(b.classList.contains('selected')) b.classList.add('wrong-answer');
+        if(b.textContent.toLowerCase()===TF_CORRECT[i]) b.classList.add('correct-answer');
+      });
+    }
+  }
+  document.getElementById('tfCheckBtn').disabled=true;
+
+  if(correctCount===4){
+    document.getElementById('fb9-correct').classList.add('show');
+    qResults[9]=true;
+    qPoints[9]=10;
+    totalPoints+=10;
+    updateDot(9,true);
+  } else {
+    const wrongItems=[];
+    if(tfAnswers[2]!=='falskt') wrongItems.push('Det var de som var MOT Kristian som dödades, inte de som stöttade honom.');
+    const fbText='Du fick '+correctCount+' av 4 rätt. '+(wrongItems.length?wrongItems.join(' '):'Kolla de markerade påståendena.');
+    document.getElementById('fb9-wrong').textContent=fbText;
+    document.getElementById('fb9-wrong').classList.add('show');
+    if(correctCount>=3){
+      qResults[9]='partial';
+      qPoints[9]=5;
+      totalPoints+=5;
+      updateDot(9,'partial');
+    } else {
+      qResults[9]=false;
+      qPoints[9]=0;
+      updateDot(9,false);
+    }
+  }
+  document.getElementById('next9').classList.add('show');
+  saveAnswer(9);
+}
+
+// ---- SECTION DIVIDER ----
+function showSectionDivider(){
+  document.getElementById('q9').classList.remove('active');
+  document.getElementById('sectionDivider').classList.add('active');
+}
+function startPart2(){
+  document.getElementById('sectionDivider').classList.remove('active');
+  document.getElementById('q10').classList.add('active');
+  document.getElementById('dot10').classList.add('active');
+  currentQ=10;
+}
+
+// ---- OPEN QUESTIONS ----
+function updateWC(qIdx, minWords){
+  const text=document.getElementById('open'+qIdx).value.trim();
+  const words=text?text.split(/\s+/).length:0;
+  document.getElementById('wc'+qIdx).textContent=words+' ord (minst '+minWords+')';
+  document.getElementById('submit'+qIdx).disabled=words<minWords;
+}
+
+function submitOpen(qIdx){
+  document.getElementById('compare'+qIdx).classList.add('show');
+  document.getElementById('submit'+qIdx).disabled=true;
+  document.getElementById('open'+qIdx).disabled=true;
+}
+
+function selfAssess(qIdx, good){
+  const pts=good?20:10;
+  totalPoints+=pts;
+  qResults[qIdx]=good?true:'partial';
+  qPoints[qIdx]=pts;
+  updateDot(qIdx, good?true:'partial');
+  document.getElementById('sa'+qIdx).innerHTML='<span style="color:var(--success);font-weight:600">+'+pts+' poäng!</span>';
+  document.getElementById('next'+qIdx).classList.add('show');
+  saveAnswer(qIdx);
+}
+
+// ---- NAVIGATION ----
+function nextQ(idx){
+  document.getElementById('q'+(idx-1)).classList.remove('active');
+  document.getElementById('q'+idx).classList.add('active');
+  document.getElementById('dot'+idx).classList.add('active');
+  currentQ=idx;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function updateDot(idx, result){
+  const dot=document.getElementById('dot'+idx);
+  dot.classList.remove('active');
+  if(result===true) dot.classList.add('correct');
+  else if(result==='partial') dot.classList.add('partial');
+  else dot.classList.add('wrong');
+}
+
+// ---- SAVE ----
+function saveAnswer(qIdx){
+  const key=PREFIX+PAGE_ID+'-q'+(qIdx+1);
+  const data={result:qResults[qIdx],points:qPoints[qIdx]};
+  // Save open answer text if applicable
+  const openEl=document.getElementById('open'+qIdx);
+  if(openEl) data.answer=openEl.value;
+  // Save fill answer text if applicable
+  const fillEl=document.getElementById('fill'+qIdx);
+  if(fillEl) data.answer=fillEl.value;
+  // Save TF answers for q10
+  if(qIdx===9) data.tfAnswers=tfAnswers;
+  localStorage.setItem(key,JSON.stringify(data));
+}
+
+// ---- RESULTS ----
+function showResults(){
+  document.getElementById('q14').classList.remove('active');
+  const box=document.getElementById('resultsBox');
+  box.classList.add('show');
+  if(timerInterval) clearInterval(timerInterval);
+
+  const elapsed=getElapsedSeconds();
+
+  // Calculate scores per section
+  let faktaCorrect=0, faktaPoints=0;
+  for(let i=0;i<FAKTA_COUNT;i++){
+    if(qResults[i]===true) faktaCorrect++;
+    faktaPoints+=qPoints[i];
+  }
+  let resoCorrect=0, resoPoints=0;
+  for(let i=FAKTA_COUNT;i<TOTAL_Q;i++){
+    if(qResults[i]===true) resoCorrect++;
+    resoPoints+=qPoints[i];
+  }
+  const resoPartial=qResults.slice(FAKTA_COUNT).filter(r=>r==='partial').length;
+
+  const maxPoints=FAKTA_COUNT*10+RESO_COUNT*20; // 100+100=200
+  const percentage=Math.round(totalPoints/maxPoints*100);
+
+  const scoreEl=document.getElementById('scoreText');
+  scoreEl.textContent=totalPoints+'/'+maxPoints+' poäng ('+percentage+'%)';
+  if(percentage>=80) scoreEl.classList.add('great');
+  else if(percentage>=60) scoreEl.classList.add('good');
+  else scoreEl.classList.add('ok');
+
+  const m=Math.floor(elapsed/60);
+  const s=elapsed%60;
+  document.getElementById('scoreDetail').textContent=
+    'Faktadel: '+faktaCorrect+'/'+FAKTA_COUNT+' rätt ('+faktaPoints+'p) | Resonemangsdel: '+resoCorrect+'/'+RESO_COUNT+' rätt'+(resoPartial>0?' (+'+resoPartial+' delvis)':'')+' ('+resoPoints+'p) | Tid: '+m+' min '+s+' sek';
+
+  // Fakta grid
+  const faktaLabels=[
+    'Gustav Vasa kung (E)','Kalmarunionen (E)','Stockholms blodbad (C)',
+    'Piga (E)','Reformationen (C)','Dackeupproret (E)',
+    'Propaganda (C)','Erik XIV (E)','Klubbekriget (C)','Sant/Falskt (E)'
+  ];
+  const gridFakta=document.getElementById('resultGridFakta');
+  faktaLabels.forEach((label,i)=>{
+    const div=document.createElement('div');
+    div.className='result-item '+(qResults[i]===true?'right':qResults[i]==='partial'?'partial':'wrong');
+    const icon=qResults[i]===true?'Rätt':qResults[i]==='partial'?'Delvis':'Fel';
+    div.textContent=icon+': '+label;
+    gridFakta.appendChild(div);
+  });
+
+  // Reso grid
+  const resoLabels=[
+    'Svenska bönder (C)','Kyrkans silver (A)','Uppror (A)',
+    'Källkritik (C)','Valkungar/Arvkungar (A)'
+  ];
+  const gridReso=document.getElementById('resultGridResonemang');
+  resoLabels.forEach((label,i)=>{
+    const idx=FAKTA_COUNT+i;
+    const div=document.createElement('div');
+    div.className='result-item '+(qResults[idx]===true?'right':qResults[idx]==='partial'?'partial':'wrong');
+    const icon=qResults[idx]===true?'Rätt':qResults[idx]==='partial'?'Delvis':'Ej bedömd';
+    div.textContent=icon+': '+label;
+    gridReso.appendChild(div);
+  });
+
+  // Feedback
+  const fb=document.getElementById('resultFeedback');
+  if(percentage>=80){
+    fb.innerHTML='<strong>Fantastiskt, Buster!</strong> Du har verkligen förstått Vasatiden på djupet. Imponerande!';
+    fb.style.background='#dcfce7';fb.style.color='#166534';
+  } else if(percentage>=60){
+    fb.innerHTML='<strong>Riktigt bra, Buster!</strong> Du kan det mesta. Kolla igenom det du missade.';
+    fb.style.background='#dbeafe';fb.style.color='#1e40af';
+  } else {
+    fb.innerHTML='<strong>Bra försök, Buster!</strong> Gå tillbaka och repetera de delar du är osäker på. Du fixar det!';
+    fb.style.background='#fef3c7';fb.style.color='#92400e';
+  }
+
+  // Save to localStorage
+  localStorage.setItem(PREFIX+PAGE_ID+'-result',JSON.stringify({
+    totalPoints:totalPoints,
+    maxPoints:maxPoints,
+    percentage:percentage,
+    faktaCorrect:faktaCorrect,
+    resoCorrect:resoCorrect,
+    qResults:qResults,
+    qPoints:qPoints,
+    timestamp:new Date().toISOString()
+  }));
+  localStorage.setItem(PREFIX+PAGE_ID+'-time',elapsed.toString());
+}
+
+// ---- RESET ----
+function resetExam(){
+  // Clear all prov-related localStorage
+  for(let i=1;i<=TOTAL_Q;i++){
+    localStorage.removeItem(PREFIX+PAGE_ID+'-q'+i);
+  }
+  localStorage.removeItem(PREFIX+PAGE_ID+'-result');
+  localStorage.removeItem(PREFIX+PAGE_ID+'-time');
+  location.reload();
+}
+
+// ---- CHECK IF ALREADY COMPLETED ----
+function checkPrevious(){
+  const result=localStorage.getItem(PREFIX+PAGE_ID+'-result');
+  if(result){
+    const data=JSON.parse(result);
+    const introScreen=document.getElementById('introScreen');
+    introScreen.querySelector('h2').textContent='Du har redan gjort provet!';
+    introScreen.querySelector('p').textContent='Ditt resultat: '+data.totalPoints+'/'+data.maxPoints+' poäng ('+data.percentage+'%).';
+    const infoBox=introScreen.querySelector('.info-box');
+    infoBox.innerHTML='<strong>Vill du göra om provet?</strong> Om du startar provet igen nollställs ditt gamla resultat.';
+    introScreen.querySelector('.start-btn').textContent='Gör om provet';
+    introScreen.querySelector('.start-btn').onclick=function(){
+      resetExam();
+    };
+    // Add link back
+    const backLink=document.createElement('a');
+    backLink.href='index.html';
+    backLink.style.cssText='display:inline-block;margin-top:12px;color:var(--accent);font-size:.9em;';
+    backLink.textContent='Tillbaka till översikten';
+    introScreen.appendChild(backLink);
+  }
+}
+
+checkPrevious();
+</script>
+</body>
+</html>

@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz: Del 4 - Vasatiden</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#f1f5f9;--card:#fff;--text:#1e293b;--muted:#64748b;--accent:#2563eb;--success:#16a34a;--danger:#dc2626;--warning:#f59e0b;--sidebar-bg:#1e293b;--sidebar-text:#e2e8f0;--radius:10px;--shadow:0 2px 12px rgba(0,0,0,.08)}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:18px;line-height:1.7;color:var(--text);background:var(--bg);display:flex;min-height:100vh}
+.sidebar{width:220px;background:var(--sidebar-bg);color:var(--sidebar-text);padding:20px 0;flex-shrink:0;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;overflow-y:auto}
+.sidebar .logo{padding:0 16px 16px;font-weight:800;font-size:1.1em;border-bottom:1px solid #334155}.sidebar .logo a{color:var(--sidebar-text);text-decoration:none}
+.sidebar nav{padding:12px 0;flex:1}
+.sidebar .section-title{padding:8px 16px;font-size:.7em;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;margin-top:8px}
+.sidebar a{display:flex;align-items:center;gap:8px;padding:7px 16px;color:#cbd5e1;text-decoration:none;font-size:.85em;transition:background .15s}
+.sidebar a:hover{background:#334155}.sidebar a.active{background:var(--accent);color:#fff;font-weight:600}.sidebar a.done .icon{color:var(--success)}
+.sidebar .progress-box{padding:12px 16px;border-top:1px solid #334155;margin-top:auto}
+.sidebar .progress-box .bar{height:6px;background:#334155;border-radius:3px;overflow:hidden;margin-top:6px}
+.sidebar .progress-box .bar-fill{height:100%;background:var(--success);border-radius:3px;transition:width .3s}
+.sidebar .progress-box span{font-size:.7em;color:#94a3b8}
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:12px 28px;background:var(--card);border-bottom:1px solid #e2e8f0}
+.topbar .breadcrumb{font-size:.8em;color:var(--muted)}.topbar .breadcrumb a{color:var(--accent);text-decoration:none}
+.topbar .points{font-weight:700;color:var(--warning);font-size:.95em}
+
+.content{max-width:700px;margin:0 auto;padding:28px 32px}
+.content h1{font-size:1.5em;font-weight:800;margin-bottom:4px;color:var(--sidebar-bg)}
+.content .subtitle{font-size:.85em;color:var(--muted);margin-bottom:8px}
+
+.quiz-info{background:#fef3c7;border:2px solid #fbbf24;border-radius:var(--radius);padding:14px 18px;margin-bottom:20px;font-size:.9em;color:#92400e}
+
+/* Question stepper */
+.q-progress{display:flex;gap:6px;margin-bottom:20px}
+.q-dot{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85em;border:2px solid #e2e8f0;color:var(--muted);background:var(--card)}
+.q-dot.active{border-color:var(--accent);color:var(--accent);background:#dbeafe}
+.q-dot.correct{border-color:var(--success);color:#fff;background:var(--success)}
+.q-dot.wrong{border-color:var(--danger);color:#fff;background:var(--danger)}
+.q-dot.partial{border-color:var(--warning);color:#fff;background:var(--warning)}
+
+/* Question cards */
+.q-card{display:none;background:var(--card);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);margin-bottom:16px}
+.q-card.active{display:block}
+.q-card h3{font-size:1em;margin-bottom:14px;color:var(--sidebar-bg)}
+.badge{display:inline-block;font-size:.65em;padding:2px 8px;border-radius:4px;font-weight:700;margin-bottom:8px;text-transform:uppercase}
+.badge-e{background:#dcfce7;color:var(--success)}
+.badge-c{background:#dbeafe;color:var(--accent)}
+.badge-a{background:#fef3c7;color:#92400e}
+
+.options{display:flex;flex-direction:column;gap:8px}
+.option-btn{display:block;width:100%;text-align:left;padding:12px 16px;border:2px solid #e2e8f0;border-radius:8px;background:var(--card);cursor:pointer;font-size:.9em;font-family:inherit;transition:border-color .15s,background .15s}
+.option-btn:hover:not(:disabled){border-color:var(--accent);background:#f0f6ff}
+.option-btn.correct{border-color:var(--success);background:#dcfce7}.option-btn.wrong{border-color:var(--danger);background:#fee2e2}.option-btn:disabled{cursor:default}
+
+/* Fill in */
+.fill-input{width:200px;padding:8px 12px;border:2px solid #e2e8f0;border-radius:6px;font-family:inherit;font-size:.9em}
+.fill-input:focus{border-color:var(--accent);outline:none}
+.fill-input.correct{border-color:var(--success);background:#dcfce7}
+.fill-input.wrong{border-color:var(--danger);background:#fee2e2}
+.fill-submit{padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-size:.85em;font-weight:600;margin-left:8px}
+
+/* Open answer */
+.open-answer{width:100%;min-height:70px;padding:12px;border:2px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:.9em;resize:vertical;line-height:1.5}
+.open-answer:focus{border-color:var(--accent);outline:none}
+.word-count{font-size:.75em;color:var(--muted);margin-top:4px}
+.submit-open{margin-top:10px;padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:.9em;cursor:pointer;font-family:inherit;font-weight:600}
+.submit-open:disabled{opacity:.4;cursor:not-allowed}
+.compare-box{display:none;margin-top:14px;padding:16px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0}
+.compare-box.show{display:block}
+.compare-box h4{font-size:.85em;margin-bottom:8px;color:var(--muted)}
+.compare-box .model-answer{background:#f0fdf4;padding:10px;border-radius:6px;font-size:.9em;margin-top:8px}
+.self-assess{margin-top:12px;display:flex;gap:8px}
+.self-assess button{padding:8px 16px;border-radius:6px;border:2px solid #e2e8f0;background:var(--card);cursor:pointer;font-family:inherit;font-size:.85em;font-weight:600}
+.self-assess .yes-btn:hover{border-color:var(--success);background:#dcfce7}
+
+.feedback{margin-top:12px;padding:12px 16px;border-radius:8px;font-size:.9em;display:none}
+.feedback.show{display:block}
+.feedback.correct{background:#dcfce7;color:#166534}
+.feedback.wrong{background:#fee2e2;color:#991b1b}
+
+.hint-btn{background:none;border:none;color:var(--accent);cursor:pointer;font-size:.8em;margin-top:8px;font-family:inherit;text-decoration:underline}
+.hint-box{margin-top:8px;padding:8px 12px;background:#f0f6ff;border-radius:6px;font-size:.85em;display:none}.hint-box.show{display:block}
+
+.next-q-btn{margin-top:14px;padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:.9em;cursor:pointer;font-family:inherit;font-weight:600;display:none}
+.next-q-btn.show{display:inline-block}
+
+/* Results */
+.results{display:none;background:var(--card);border-radius:var(--radius);padding:28px;box-shadow:var(--shadow);text-align:center}
+.results.show{display:block}
+.results h2{font-size:1.4em;margin-bottom:16px}
+.results .score{font-size:2.5em;font-weight:800;margin:12px 0}
+.results .score.great{color:var(--success)}
+.results .score.good{color:var(--accent)}
+.results .score.ok{color:var(--warning)}
+.results .detail{font-size:.9em;color:var(--muted);margin-bottom:20px}
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0;text-align:left}
+.result-item{padding:10px 14px;border-radius:8px;font-size:.85em}
+.result-item.right{background:#dcfce7;color:#166534}
+.result-item.wrong{background:#fee2e2;color:#991b1b}
+.result-item.partial{background:#fef3c7;color:#92400e}
+
+.nav-buttons{display:flex;justify-content:space-between;align-items:center;margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f0}
+.nav-btn{padding:10px 24px;border-radius:8px;font-size:.9em;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;border:none;display:inline-flex;align-items:center;gap:6px}
+.nav-btn.secondary{background:#f1f5f9;color:var(--text)}.nav-btn.secondary:hover{background:#e2e8f0}
+.nav-btn.primary{background:var(--success);color:#fff}.nav-btn.primary:hover{background:#15803d}
+.nav-btn.locked{opacity:.35;cursor:not-allowed;pointer-events:none}
+
+@media(max-width:960px){.sidebar{width:180px}.main{margin-left:180px}}
+@media(max-width:768px){.sidebar{display:none}.main{margin-left:0}.content{padding:20px}}
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="logo"><a href="index.html">Vasatiden</a></div>
+  <nav>
+    <div class="section-title">Del 4: Uppror och motstånd</div>
+    <a href="del4-01-uppror-i-smaland.html" id="nav-del4-01"><span class="icon">&#9675;</span> Uppror i Småland</a>
+    <a href="del4-02-nils-dacke.html" id="nav-del4-02"><span class="icon">&#9675;</span> Nils Dacke</a>
+    <a href="del4-03-propaganda.html" id="nav-del4-03"><span class="icon">&#9675;</span> Propaganda</a>
+    <a href="del4-quiz.html" class="active" id="nav-del4-quiz"><span class="icon">&#9654;</span> Quiz: Del 4</a>
+  </nav>
+  <div class="progress-box">
+    <span>Del 4: <span id="progressText">0/4</span></span>
+    <div class="bar"><div class="bar-fill" id="progressBar" style="width:0%"></div></div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div class="breadcrumb"><a href="index.html">Vasatiden</a> &rsaquo; Del 4 &rsaquo; Quiz</div>
+    <div class="points" id="pointsDisplay">0 p</div>
+  </div>
+
+  <div class="content" id="contentArea">
+    <h1>Quiz: Uppror och motstånd</h1>
+    <div class="subtitle">Svara utan att titta tillbaka på texterna!</div>
+
+    <div class="quiz-info">
+      Dags att testa vad du vet om Dackeupproret och propaganda! Inga fusklappar. 6 frågor &ndash; blandade nivåer (E, C, A). Lycka till, Buster!
+    </div>
+
+    <!-- Progress dots -->
+    <div class="q-progress" id="qProgress">
+      <div class="q-dot active" id="dot0">1</div>
+      <div class="q-dot" id="dot1">2</div>
+      <div class="q-dot" id="dot2">3</div>
+      <div class="q-dot" id="dot3">4</div>
+      <div class="q-dot" id="dot4">5</div>
+      <div class="q-dot" id="dot5">6</div>
+    </div>
+
+    <!-- Q1: E-level (MC) -->
+    <div class="q-card active" id="q0">
+      <span class="badge badge-e">Nivå E</span>
+      <h3>Vilket år startade Dackeupproret?</h3>
+      <div class="options">
+        <button class="option-btn" onclick="answerMC(0,0)">1520</button>
+        <button class="option-btn" onclick="answerMC(0,1)">1542</button>
+        <button class="option-btn" onclick="answerMC(0,2)">1560</button>
+      </div>
+      <button class="hint-btn" onclick="showHint(0)">Ledtråd</button>
+      <div class="hint-box" id="hint0">Det var på 1500-talet, ungefär 20 år efter att Gustav Vasa blev kung...</div>
+      <div class="feedback correct" id="fb0-correct">Rätt! Dackeupproret startade 1542.</div>
+      <div class="feedback wrong" id="fb0-wrong">Nope &ndash; det rätta svaret är 1542!</div>
+      <button class="next-q-btn" id="next0" onclick="nextQ(1)">Nästa fråga &rarr;</button>
+    </div>
+
+    <!-- Q2: C-level (MC) -->
+    <div class="q-card" id="q1">
+      <span class="badge badge-c">Nivå C</span>
+      <h3>Hur lyckades bönderna stå emot kungens yrkessoldater i början?</h3>
+      <div class="options">
+        <button class="option-btn" onclick="answerMC(1,0)">De hade kanoner</button>
+        <button class="option-btn" onclick="answerMC(1,1)">De använde sin kunskap om skogarna och överraskade soldaterna</button>
+        <button class="option-btn" onclick="answerMC(1,2)">Soldaterna gav upp direkt</button>
+      </div>
+      <button class="hint-btn" onclick="showHint(1)">Ledtråd</button>
+      <div class="hint-box" id="hint1">Tänk på hemmaplansfördel &ndash; vem kände skogarna bäst?</div>
+      <div class="feedback correct" id="fb1-correct">Exakt! Bönderna kände varje stig och kunde överraska fienden med gerillakrigföring.</div>
+      <div class="feedback wrong" id="fb1-wrong">Inte riktigt. Bönderna använde sin kunskap om skogarna för att överraska soldaterna.</div>
+      <button class="next-q-btn" id="next1" onclick="nextQ(2)">Nästa fråga &rarr;</button>
+    </div>
+
+    <!-- Q3: E-level (fill in) -->
+    <div class="q-card" id="q2">
+      <span class="badge badge-e">Nivå E</span>
+      <h3>Fyll i: Gustav Vasa var en mästare på ___</h3>
+      <div style="display:flex;align-items:center;margin-top:10px">
+        <input class="fill-input" id="fill2" type="text" placeholder="Skriv här...">
+        <button class="fill-submit" onclick="answerFill(2)">Kolla</button>
+      </div>
+      <button class="hint-btn" onclick="showHint(2)">Ledtråd</button>
+      <div class="hint-box" id="hint2">Det handlar om att påverka vad folk tycker genom att berätta saker på ett speciellt sätt...</div>
+      <div class="feedback correct" id="fb2-correct">Rätt! Gustav Vasa var en mästare på propaganda.</div>
+      <div class="feedback wrong" id="fb2-wrong">Svaret är "propaganda".</div>
+      <button class="next-q-btn" id="next2" onclick="nextQ(3)">Nästa fråga &rarr;</button>
+    </div>
+
+    <!-- Q4: C-level (MC) -->
+    <div class="q-card" id="q3">
+      <span class="badge badge-c">Nivå C</span>
+      <h3>Varför är det svårt att veta sanningen om Nils Dacke?</h3>
+      <div class="options">
+        <button class="option-btn" onclick="answerMC(3,0)">Han levde för länge sedan</button>
+        <button class="option-btn" onclick="answerMC(3,1)">Det mesta om honom skrevs av hans fiender, som hade anledning att framställa honom negativt</button>
+        <button class="option-btn" onclick="answerMC(3,2)">Han kunde inte skriva</button>
+      </div>
+      <button class="hint-btn" onclick="showHint(3)">Ledtråd</button>
+      <div class="hint-box" id="hint3">Tänk på VEM som skrev om Dacke. Var de objektiva?</div>
+      <div class="feedback correct" id="fb3-correct">Precis! Dackes fiender skrev historien, och de hade all anledning att framställa honom negativt.</div>
+      <div class="feedback wrong" id="fb3-wrong">Det rätta svaret: det mesta skrevs av hans fiender, som hade anledning att framställa honom negativt.</div>
+      <button class="next-q-btn" id="next3" onclick="nextQ(4)">Nästa fråga &rarr;</button>
+    </div>
+
+    <!-- Q5: A-level (open) -->
+    <div class="q-card" id="q4">
+      <span class="badge badge-a">Nivå A &ndash; Utmaning (+20p)</span>
+      <h3>Gustav Vasa använde falska rykten och propaganda mot Nils Dacke. Är det OK att ljuga om man tycker att man har rätt? Resonera.</h3>
+      <textarea class="open-answer" id="open4" placeholder="Skriv ditt resonemang..." oninput="updateWC4()"></textarea>
+      <div class="word-count" id="wc4">0 ord (minst 15)</div>
+      <button class="submit-open" id="submit4" onclick="submitOpen(4)" disabled>Visa facit</button>
+      <button class="hint-btn" onclick="showHint(4)">Ledtråd</button>
+      <div class="hint-box" id="hint4">Tänk på vad som händer med förtroendet om en ledare ljuger. Kan folk lita på någon som ljuger "för deras bästa"?</div>
+      <div class="compare-box" id="compare4">
+        <h4>Exempelsvar:</h4>
+        <div class="model-answer">Det kan vara effektivt men det underminerar förtroende. Om en ledare ljuger för att vinna, hur vet folk vad som är sant? Det skapar en farlig situation där makten bestämmer vad som är "sanning". Det var inte OK &ndash; det var manipulation.</div>
+        <div class="self-assess" id="sa4">
+          <button class="yes-btn" onclick="selfAssessQuiz(4, true)">Jag fick med det viktiga</button>
+          <button class="yes-btn" onclick="selfAssessQuiz(4, false)" style="background:#fefce8">Jag missade en del</button>
+        </div>
+      </div>
+      <button class="next-q-btn" id="next4" onclick="nextQ(5)">Nästa fråga &rarr;</button>
+    </div>
+
+    <!-- Q6: A-level (MC) -->
+    <div class="q-card" id="q5">
+      <span class="badge badge-a">Nivå A</span>
+      <h3>Vad har Dackeupproret och klockupproret gemensamt?</h3>
+      <div class="options">
+        <button class="option-btn" onclick="answerMC(5,0)">Båda leddes av Nils Dacke</button>
+        <button class="option-btn" onclick="answerMC(5,1)">Båda var bönder som protesterade mot att Gustav Vasa tog för mycket från dem</button>
+        <button class="option-btn" onclick="answerMC(5,2)">Båda lyckades</button>
+      </div>
+      <button class="hint-btn" onclick="showHint(5)">Ledtråd</button>
+      <div class="hint-box" id="hint5">Tänk på VAD bönderna var arga på i båda upproren &ndash; vad hade de gemensamt?</div>
+      <div class="feedback correct" id="fb5-correct">Rätt! Både klockupproret och Dackeupproret handlade om att bönder protesterade mot att Gustav Vasa tog för mycket från dem.</div>
+      <div class="feedback wrong" id="fb5-wrong">Inte riktigt. Båda upproren handlade om att bönder protesterade mot att Gustav Vasa tog för mycket från dem.</div>
+      <button class="next-q-btn" id="next5" onclick="showResults()">Se resultat &rarr;</button>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="results" id="resultsBox">
+      <h2>Resultat: Del 4</h2>
+      <div class="score" id="scoreText"></div>
+      <div class="detail" id="scoreDetail"></div>
+      <div class="result-grid" id="resultGrid"></div>
+      <div class="nav-buttons" style="border:none;padding-top:0">
+        <a href="del4-01-uppror-i-smaland.html" class="nav-btn secondary">&larr; Läsa om Del 4</a>
+        <a href="index.html" class="nav-btn primary">Tillbaka till översikten &rarr;</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PREFIX='buster-vasatiden-';
+const PAGE_ID='del4-quiz';
+let currentQ=0;
+let qResults=[null,null,null,null,null,null]; // null=unanswered, true=correct, false=wrong, 'partial'
+let qPoints=[0,0,0,0,0,0];
+let hintsUsed=[0,0,0,0,0,0];
+let totalQuizPoints=0;
+let startTime=Date.now();
+
+// MC correct answers: q0=1(1542), q1=1(skogarna), q3=1(fiender), q5=1(bönder protesterade)
+const MC_CORRECT={0:1, 1:1, 3:1, 5:1};
+
+function getPoints(){return parseInt(localStorage.getItem(PREFIX+'points')||'0')}
+function addPoints(n){const p=getPoints()+n;localStorage.setItem(PREFIX+'points',p.toString());updatePointsDisplay();totalQuizPoints+=n;return p;}
+function updatePointsDisplay(){document.getElementById('pointsDisplay').textContent=getPoints()+' p';}
+function getProgress(){return JSON.parse(localStorage.getItem(PREFIX+'progress')||'{}')}
+function markComplete(){const p=getProgress();p[PAGE_ID]=true;localStorage.setItem(PREFIX+'progress',JSON.stringify(p));updateNav();}
+function saveStats(){
+  const stats=JSON.parse(localStorage.getItem(PREFIX+'pageStats')||'{}');
+  stats[PAGE_ID]={time:Math.round((Date.now()-startTime)/1000),results:qResults,points:totalQuizPoints,hintsPerQ:hintsUsed,timestamp:new Date().toISOString()};
+  localStorage.setItem(PREFIX+'pageStats',JSON.stringify(stats));
+}
+
+function answerMC(qIdx, choice){
+  const card=document.getElementById('q'+qIdx);
+  const btns=card.querySelectorAll('.option-btn');
+  if(btns[0].disabled)return;
+
+  const correct=MC_CORRECT[qIdx]===choice;
+  if(correct){
+    btns[choice].classList.add('correct');
+    document.getElementById('fb'+qIdx+'-correct').classList.add('show');
+    const pts=hintsUsed[qIdx]>0?5:10;
+    addPoints(pts);
+    qResults[qIdx]=true;
+    qPoints[qIdx]=pts;
+  } else {
+    btns[choice].classList.add('wrong');
+    btns[MC_CORRECT[qIdx]].classList.add('correct');
+    document.getElementById('fb'+qIdx+'-wrong').classList.add('show');
+    qResults[qIdx]=false;
+    qPoints[qIdx]=0;
+  }
+  btns.forEach(b=>b.disabled=true);
+  updateDot(qIdx, correct);
+  document.getElementById('next'+qIdx).classList.add('show');
+}
+
+function answerFill(qIdx){
+  const input=document.getElementById('fill'+qIdx);
+  const val=input.value.trim().toLowerCase();
+  if(!val)return;
+
+  if(qIdx===2){
+    const correct=val.includes('propaganda');
+    if(correct){
+      input.classList.add('correct');
+      document.getElementById('fb2-correct').classList.add('show');
+      const pts=hintsUsed[2]>0?5:10;
+      addPoints(pts);
+      qResults[2]=true;qPoints[2]=pts;
+      updateDot(2,true);
+    } else {
+      input.classList.add('wrong');
+      document.getElementById('fb2-wrong').classList.add('show');
+      qResults[2]=false;qPoints[2]=0;
+      updateDot(2,false);
+    }
+    input.disabled=true;
+    document.getElementById('next2').classList.add('show');
+  }
+}
+
+function updateWC4(){
+  const text=document.getElementById('open4').value.trim();
+  const words=text?text.split(/\s+/).length:0;
+  document.getElementById('wc4').textContent=words+' ord (minst 15)';
+  document.getElementById('submit4').disabled=words<15;
+}
+
+function submitOpen(qIdx){
+  document.getElementById('compare'+qIdx).classList.add('show');
+  document.getElementById('submit'+qIdx).disabled=true;
+  document.getElementById('open'+qIdx).disabled=true;
+}
+
+function selfAssessQuiz(qIdx, good){
+  const pts=good?20:10;
+  addPoints(pts);
+  qResults[qIdx]=good?true:'partial';
+  qPoints[qIdx]=pts;
+  updateDot(qIdx, good);
+  document.getElementById('sa'+qIdx).innerHTML='<span style="color:var(--success);font-weight:600">+'+pts+' poäng!</span>';
+  document.getElementById('next'+qIdx).classList.add('show');
+  // Save open answer
+  const stats=JSON.parse(localStorage.getItem(PREFIX+'pageStats')||'{}');
+  stats['del4-quiz-q'+(qIdx+1)+'-answer']=document.getElementById('open'+qIdx).value;
+  localStorage.setItem(PREFIX+'pageStats',JSON.stringify(stats));
+}
+
+function showHint(qIdx){
+  hintsUsed[qIdx]++;
+  document.getElementById('hint'+qIdx).classList.add('show');
+}
+
+function nextQ(idx){
+  document.getElementById('q'+(idx-1)).classList.remove('active');
+  document.getElementById('q'+idx).classList.add('active');
+  document.getElementById('dot'+idx).classList.add('active');
+  currentQ=idx;
+}
+
+function updateDot(idx, correct){
+  const dot=document.getElementById('dot'+idx);
+  dot.classList.remove('active');
+  if(correct===true) dot.classList.add('correct');
+  else if(correct==='partial'||correct===false&&qPoints[idx]>0) dot.classList.add('partial');
+  else dot.classList.add('wrong');
+}
+
+function showResults(){
+  document.getElementById('q5').classList.remove('active');
+  const box=document.getElementById('resultsBox');
+  box.classList.add('show');
+
+  const correctCount=qResults.filter(r=>r===true).length;
+  const partialCount=qResults.filter(r=>r==='partial').length;
+
+  const scoreEl=document.getElementById('scoreText');
+  scoreEl.textContent=correctCount+'/6 rätt';
+  if(correctCount>=5) scoreEl.classList.add('great');
+  else if(correctCount>=3) scoreEl.classList.add('good');
+  else scoreEl.classList.add('ok');
+
+  document.getElementById('scoreDetail').textContent=
+    'Total poäng denna quiz: '+totalQuizPoints+' p | Tid: '+Math.round((Date.now()-startTime)/1000)+' sekunder';
+
+  const grid=document.getElementById('resultGrid');
+  const labels=['Dackeupprorets år (E)','Böndernas taktik (C)','Gustav Vasas talang (E)','Sanningen om Dacke (C)','Ljuga för rätt sak? (A)','Gemensamt med klockupproret (A)'];
+  labels.forEach((label,i)=>{
+    const div=document.createElement('div');
+    div.className='result-item '+(qResults[i]===true?'right':qResults[i]==='partial'?'partial':'wrong');
+    div.textContent=(qResults[i]===true?'Rätt':'Fel/delvis')+': '+label;
+    grid.appendChild(div);
+  });
+
+  markComplete();
+  saveStats();
+}
+
+function updateNav(){
+  const progress=getProgress();const pages=['del4-01','del4-02','del4-03','del4-quiz'];let done=0;
+  pages.forEach(p=>{const el=document.getElementById('nav-'+p);if(el&&progress[p]){el.classList.add('done');el.querySelector('.icon').innerHTML='&#10003;';done++;}});
+  document.getElementById('progressText').textContent=done+'/'+pages.length;
+  document.getElementById('progressBar').style.width=Math.round(done/pages.length*100)+'%';
+}
+
+function checkPrevious(){
+  const progress=getProgress();
+  if(progress[PAGE_ID]){
+    const stats=JSON.parse(localStorage.getItem(PREFIX+'pageStats')||'{}');
+    if(stats[PAGE_ID]){
+      document.querySelector('.quiz-info').innerHTML='Du har redan gjort denna quiz! Resultat: '+stats[PAGE_ID].points+' poäng. <a href="index.html">Tillbaka till översikten</a>';
+    }
+  }
+}
+
+updatePointsDisplay();updateNav();checkPrevious();
+</script>
+</body>
+</html>

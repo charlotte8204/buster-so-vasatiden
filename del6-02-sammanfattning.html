@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sammanfattning - Vasatiden</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f1f5f9;--card:#fff;--text:#1e293b;--muted:#64748b;
+  --accent:#2563eb;--success:#16a34a;--danger:#dc2626;--warning:#f59e0b;
+  --sidebar-bg:#1e293b;--sidebar-text:#e2e8f0;
+  --concept:#2563eb;--fact:#16a34a;--person:#dc2626;--funfact:#f59e0b;
+  --radius:10px;--shadow:0 2px 12px rgba(0,0,0,.08);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:18px;line-height:1.7;color:var(--text);background:var(--bg);display:flex;min-height:100vh}
+
+/* LEFT NAV */
+.sidebar{width:220px;background:var(--sidebar-bg);color:var(--sidebar-text);padding:20px 0;flex-shrink:0;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;overflow-y:auto}
+.sidebar .logo{padding:0 16px 16px;font-weight:800;font-size:1.1em;border-bottom:1px solid #334155}
+.sidebar .logo a{color:var(--sidebar-text);text-decoration:none}
+.sidebar nav{padding:12px 0;flex:1}
+.sidebar .section-title{padding:8px 16px;font-size:.7em;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;margin-top:8px}
+.sidebar a{display:flex;align-items:center;gap:8px;padding:7px 16px;color:#cbd5e1;text-decoration:none;font-size:.85em;transition:background .15s}
+.sidebar a:hover{background:#334155}
+.sidebar a.active{background:var(--accent);color:#fff;font-weight:600}
+.sidebar a .icon{width:18px;text-align:center;font-size:.85em}
+.sidebar a.done .icon{color:var(--success)}
+.sidebar .progress-box{padding:12px 16px;border-top:1px solid #334155;margin-top:auto}
+.sidebar .progress-box .bar{height:6px;background:#334155;border-radius:3px;overflow:hidden;margin-top:6px}
+.sidebar .progress-box .bar-fill{height:100%;background:var(--success);border-radius:3px;transition:width .3s}
+.sidebar .progress-box span{font-size:.7em;color:#94a3b8}
+
+/* MAIN */
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:12px 28px;background:var(--card);border-bottom:1px solid #e2e8f0}
+.topbar .breadcrumb{font-size:.8em;color:var(--muted)}
+.topbar .breadcrumb a{color:var(--accent);text-decoration:none}
+.topbar .points{display:flex;align-items:center;gap:6px;font-weight:700;color:var(--warning);font-size:.95em}
+.topbar .text-controls button{background:none;border:1px solid #e2e8f0;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:.8em;margin-left:4px}
+
+.content-area{flex:1;display:flex;max-width:100%}
+.content{flex:1;padding:28px 32px;max-width:680px}
+.content h1{font-size:1.5em;font-weight:800;margin-bottom:4px;color:var(--sidebar-bg)}
+.content .subtitle{font-size:.85em;color:var(--muted);margin-bottom:20px}
+
+.content p{margin-bottom:14px}
+.term{color:var(--concept);font-weight:700;cursor:help;border-bottom:2px dotted var(--concept);position:relative}
+.term:hover::after{content:attr(data-def);position:absolute;bottom:100%;left:0;background:var(--sidebar-bg);color:#fff;padding:8px 12px;border-radius:6px;font-size:.8em;font-weight:400;width:240px;z-index:10;line-height:1.4}
+.fact{color:var(--fact);font-weight:600}
+.person{color:var(--person);font-weight:600}
+.year{color:var(--danger);font-weight:700}
+
+.info-box{background:#eff6ff;border-left:4px solid var(--accent);padding:12px 16px;border-radius:0 var(--radius) var(--radius) 0;margin:16px 0;font-size:.9em}
+.fun-fact{background:#fefce8;border-left:4px solid var(--warning);padding:12px 16px;border-radius:0 var(--radius) var(--radius) 0;margin:16px 0;font-size:.9em}
+
+/* TIMELINE */
+.timeline{margin:16px 0;position:relative;padding-left:28px}
+.timeline::before{content:"";position:absolute;left:10px;top:0;bottom:0;width:3px;background:linear-gradient(to bottom,var(--accent),var(--success),var(--danger),var(--warning),var(--accent));border-radius:2px}
+.timeline-item{position:relative;padding:10px 0 10px 16px;font-size:.9em}
+.timeline-item::before{content:"";position:absolute;left:-22px;top:16px;width:12px;height:12px;border-radius:50%;border:3px solid var(--accent);background:var(--card);z-index:1}
+.timeline-item.item-conflict::before{border-color:var(--danger)}
+.timeline-item.item-change::before{border-color:var(--warning)}
+.timeline-item.item-power::before{border-color:var(--success)}
+.timeline-item .tl-label{display:inline-block;font-size:.7em;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:1px 6px;border-radius:3px;margin-bottom:2px}
+.tl-label.lbl-period{background:#dbeafe;color:var(--accent)}
+.tl-label.lbl-conflict{background:#fee2e2;color:var(--danger)}
+.tl-label.lbl-change{background:#fef3c7;color:#92400e}
+.tl-label.lbl-power{background:#dcfce7;color:var(--success)}
+
+/* QUESTION */
+.question-box{background:var(--card);border:2px solid #e2e8f0;border-radius:var(--radius);padding:20px;margin:20px 0;box-shadow:var(--shadow)}
+.question-box h3{font-size:.95em;margin-bottom:12px;color:var(--sidebar-bg)}
+.question-box .badge{display:inline-block;font-size:.65em;padding:2px 8px;border-radius:4px;font-weight:700;margin-bottom:8px;text-transform:uppercase}
+.badge-e{background:#dcfce7;color:var(--success)}
+.badge-c{background:#dbeafe;color:var(--accent)}
+.badge-a{background:#fef3c7;color:#92400e}
+
+/* Open answer */
+.open-answer{width:100%;min-height:70px;padding:12px;border:2px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:.9em;resize:vertical;line-height:1.5}
+.open-answer:focus{border-color:var(--accent);outline:none}
+.word-count{font-size:.75em;color:var(--muted);margin-top:4px}
+.submit-open{margin-top:10px;padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:.9em;cursor:pointer;font-family:inherit;font-weight:600}
+.submit-open:disabled{opacity:.4;cursor:not-allowed}
+.compare-box{display:none;margin-top:14px;padding:16px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0}
+.compare-box.show{display:block}
+.compare-box h4{font-size:.85em;margin-bottom:8px;color:var(--muted)}
+.compare-box .model-answer{background:#f0fdf4;padding:10px;border-radius:6px;font-size:.9em;margin-top:8px}
+.self-assess{margin-top:12px;display:flex;gap:8px}
+.self-assess button{padding:8px 16px;border-radius:6px;border:2px solid #e2e8f0;background:var(--card);cursor:pointer;font-family:inherit;font-size:.85em;font-weight:600}
+.self-assess .yes-btn:hover{border-color:var(--success);background:#dcfce7}
+
+.feedback{margin-top:12px;padding:12px 16px;border-radius:8px;font-size:.9em;display:none}
+.feedback.show{display:block}
+.feedback.correct{background:#dcfce7;color:#166534}
+.feedback.wrong{background:#fee2e2;color:#991b1b}
+.feedback.info{background:#dbeafe;color:#1e40af}
+
+/* NAV BUTTONS */
+.nav-buttons{display:flex;justify-content:space-between;align-items:center;margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f0}
+.nav-btn{padding:10px 24px;border-radius:8px;font-size:.9em;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;border:none;display:inline-flex;align-items:center;gap:6px}
+.nav-btn.secondary{background:#f1f5f9;color:var(--text)}
+.nav-btn.secondary:hover{background:#e2e8f0}
+.nav-btn.primary{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.25)}
+.nav-btn.primary:hover{background:#1d4ed8}
+.nav-btn:disabled,.nav-btn.locked{opacity:.35;cursor:not-allowed;pointer-events:none}
+
+.celebration{display:none;text-align:center;padding:12px;margin-top:12px;background:linear-gradient(135deg,#dcfce7,#dbeafe);border-radius:var(--radius);font-weight:600}
+.celebration.show{display:block}
+
+/* RIGHT PANEL */
+.right-panel{width:200px;padding:20px 14px;flex-shrink:0}
+.tip-card{background:#fffacd;border-radius:5px;padding:18px 15px;box-shadow:3px 3px 10px rgba(0,0,0,0.1),0 0 0 1px rgba(0,0,0,0.05);transform:rotate(-2deg);position:relative;margin-bottom:20px;margin-top:12px}
+.tip-card::before{content:"";position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:40px;height:15px;background:rgba(200,180,140,0.6);border-radius:2px}
+.tip-card h4{font-size:13px;font-weight:600;color:#7a6a4a;margin-bottom:10px;text-transform:none;letter-spacing:normal}
+.tip-card p{font-size:12px;line-height:1.5;color:#6a5a3a}
+.pause-btn{position:fixed;bottom:30px;right:30px;background:#c8f0d0;border:none;padding:15px 25px;border-radius:30px;font-family:inherit;font-size:15px;color:var(--text);cursor:pointer;box-shadow:0 4px 15px rgba(0,0,0,0.1);transition:all 0.2s ease;z-index:50}
+.pause-btn:hover{transform:scale(1.05);background:#88c498}
+
+/* PAUSE MODAL */
+.pause-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;align-items:center;justify-content:center}
+.pause-overlay.show{display:flex}
+.pause-modal{background:var(--card);border-radius:16px;padding:36px;text-align:center;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.pause-modal h2{font-size:1.3em;margin-bottom:12px}
+.pause-modal p{font-size:.95em;color:var(--muted);margin-bottom:20px}
+.pause-modal button{padding:12px 28px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:1em;cursor:pointer;font-family:inherit;font-weight:600}
+
+/* RESPONSIVE */
+@media(max-width:960px){
+  .sidebar{width:180px}
+  .main{margin-left:180px}
+  .right-panel{width:170px}
+}
+@media(max-width:768px){
+  .sidebar{display:none}
+  .main{margin-left:0}
+  .right-panel{display:none}
+  .content{padding:20px}
+}
+</style>
+</head>
+<body>
+
+<!-- LEFT SIDEBAR -->
+<div class="sidebar">
+  <div class="logo"><a href="index.html">Vasatiden</a></div>
+  <nav>
+    <div class="section-title">Del 6: K&auml;llor och historiebruk</div>
+    <a href="del6-01-kallor.html" id="nav-del6-01"><span class="icon">&#9675;</span> Hur vet vi?</a>
+    <a href="del6-02-sammanfattning.html" class="active" id="nav-del6-02"><span class="icon">&#9654;</span> Sammanfattning</a>
+    <a href="del6-quiz.html" id="nav-del6-quiz"><span class="icon">&#9675;</span> Quiz: Del 6</a>
+  </nav>
+  <div class="progress-box">
+    <span>Del 6: <span id="progressText">0/3</span></span>
+    <div class="bar"><div class="bar-fill" id="progressBar" style="width:0%"></div></div>
+  </div>
+</div>
+
+<!-- MAIN AREA -->
+<div class="main">
+  <div class="topbar">
+    <div class="breadcrumb"><a href="index.html">Vasatiden</a> &rsaquo; Del 6 &rsaquo; Sammanfattning</div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="text-controls"><button onclick="changeSize(-1)">A-</button><button onclick="changeSize(1)">A+</button></div>
+      <div class="points" id="pointsDisplay">0 p</div>
+    </div>
+  </div>
+
+  <div class="content-area">
+    <div class="content" id="contentArea">
+      <div class="subtitle">Del 6 &middot; Sida 2 av 2</div>
+      <h1>Sammanfattning: Hela Vasatiden</h1>
+
+      <p>H&auml;r &auml;r allt du l&auml;rt dig, Buster &ndash; fr&aring;n b&ouml;ndernas vardag till kungarnas maktkamper. Hela Vasatiden i en &ouml;versikt!</p>
+
+      <div class="timeline">
+
+        <div class="timeline-item">
+          <div><span class="tl-label lbl-period">Bakgrund</span></div>
+          <strong>B&ouml;ndernas Sverige</strong><br>
+          B&ouml;nderna var fattiga, men ganska fria. M&aring;nga &auml;gde sin egen jord. De odlade, betalade skatt och kunde best&auml;mma en del sj&auml;lva.
+        </div>
+
+        <div class="timeline-item">
+          <div><span class="tl-label lbl-period">1397</span></div>
+          <strong><span class="term" data-def="En union mellan Sverige, Danmark och Norge som varade 1397-1523. Alla tre l&auml;nder hade samma kung.">Kalmarunionen</span></strong><br>
+          Sverige, Danmark och Norge i union &ndash; men det ledde inte till fred. Konflikter om makten. <span class="term" data-def="En person som styrde ett land n&auml;r kungen inte var d&auml;r.">Riksf&ouml;rest&aring;ndare</span> ville best&auml;mma mer.
+        </div>
+
+        <div class="timeline-item item-conflict">
+          <div><span class="tl-label lbl-conflict">1520</span></div>
+          <strong>Stockholms blodbad</strong><br>
+          Den danske unionskungen <span class="person">Kristian II</span> l&auml;t avr&auml;tta &ouml;ver 80 personer p&aring; Stortorget i Stockholm. Det blev gnistan som t&auml;nde upproret.
+        </div>
+
+        <div class="timeline-item item-change">
+          <div><span class="tl-label lbl-change">1523</span></div>
+          <strong><span class="person">Gustav Vasa</span> blir kung</strong><br>
+          <span class="person">Gustav Eriksson (Gustav Vasa)</span> ledde upproret mot Kristian. <span class="year">1523</span> blev han kung och Sverige l&auml;mnade Kalmarunionen.
+        </div>
+
+        <div class="timeline-item item-change">
+          <div><span class="tl-label lbl-change">1520&ndash;1540-talet</span></div>
+          <strong>Reformationen</strong><br>
+          Gustav Vasa ville best&auml;mma mer sj&auml;lv. Staten beh&ouml;vde pengar. Han tog kyrkans jord och silver. Sverige gick fr&aring;n <span class="fact">katolskt till protestantiskt</span>.
+        </div>
+
+        <div class="timeline-item item-conflict">
+          <div><span class="tl-label lbl-conflict">1542&ndash;1543</span></div>
+          <strong>Dackeupproret</strong><br>
+          B&ouml;nderna i Sm&aring;land och Dalarna tyckte att Gustav Vasa f&aring;tt f&ouml;r mycket makt. <span class="person">Nils Dacke</span> ledde ett stort uppror i Sm&aring;land. Gustav Vasa hyrde in tyska yrkessoldater och krossade de sm&aring;l&auml;ndska b&ouml;nderna.
+        </div>
+
+        <div class="timeline-item item-power">
+          <div><span class="tl-label lbl-power">1544</span></div>
+          <strong>Arvkungad&ouml;met</strong><br>
+          Gustav Vasa drev igenom att kronan skulle g&aring; i arv. <span class="fact">Kung&auml;mbetet blev &auml;rftligt</span> &ndash; inte l&auml;ngre valbart.
+        </div>
+
+        <div class="timeline-item item-conflict">
+          <div><span class="tl-label lbl-conflict">1560&ndash;1568</span></div>
+          <strong><span class="person">Erik XIV</span></strong><br>
+          F&ouml;rst blev Erik XIV kung. Han var missst&auml;nksam och d&ouml;dade flera m&auml;n &ndash; <span class="fact">Sturemorden</span>. Han avsattes av sina br&ouml;der.
+        </div>
+
+        <div class="timeline-item item-power">
+          <div><span class="tl-label lbl-power">1568&ndash;1592</span></div>
+          <strong><span class="person">Johan III</span></strong><br>
+          Johan III blev kung och var katolik. Han f&ouml;rs&ouml;kte f&ouml;ra Sverige n&auml;rmare katolicismen igen.
+        </div>
+
+        <div class="timeline-item item-change">
+          <div><span class="tl-label lbl-change">1599&ndash;1611</span></div>
+          <strong><span class="person">Karl IX</span></strong><br>
+          Karl st&ouml;rtade sin brorson <span class="person">Sigismund</span> och blev kung sj&auml;lv. Sverige blev &auml;nnu mer protestantiskt.
+        </div>
+
+      </div>
+
+      <!-- QUESTION -->
+      <div class="question-box" id="questionBox">
+        <span class="badge badge-a">Niv&aring; A &ndash; Utmaning</span>
+        <h3>Vilka tre saker tycker du var VIKTIGAST under hela Vasatiden? F&ouml;rklara varf&ouml;r du valde just dem.</h3>
+        <textarea class="open-answer" id="openAnswer" placeholder="Skriv ditt resonemang h&auml;r, Buster..." oninput="updateWordCount()"></textarea>
+        <div class="word-count" id="wordCount">0 ord (minst 15)</div>
+        <button class="submit-open" id="submitBtn" onclick="submitOpen()" disabled>Visa facit</button>
+        <div class="compare-box" id="compareBox">
+          <h4>M&ouml;jliga svar:</h4>
+          <div class="model-answer">Stockholms blodbad (ledde till sj&auml;lvst&auml;ndighet), reformationen (&auml;ndrade religion och maktf&ouml;rdelning), arvkungad&ouml;met (&auml;ndrade hur kungar valdes). Alla tre f&ouml;r&auml;ndrade Sverige permanent.</div>
+          <p style="font-size:.85em;margin-top:10px;color:var(--muted)">J&auml;mf&ouml;r med ditt svar &ndash; fick du med n&aring;gra av dessa?</p>
+          <div class="self-assess" id="selfAssess">
+            <button class="yes-btn" onclick="selfAssess(true)">Jag fick med det viktiga</button>
+            <button class="yes-btn" onclick="selfAssess(false)" style="background:#fefce8">Jag missade en del</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="celebration" id="celebration">Bra jobbat, Buster!</div>
+
+      <div class="nav-buttons">
+        <a href="del6-01-kallor.html" class="nav-btn secondary">&larr; Hur vet vi?</a>
+        <a href="del6-quiz.html" class="nav-btn primary locked" id="nextBtn">N&auml;sta: Quiz Del 6 &rarr;</a>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+      <div class="tip-card">
+        <h4>Tips till Buster</h4>
+        <p>Du har l&auml;rt dig otroligt mycket, Buster. T&auml;nk tillbaka &ndash; vilka h&auml;ndelser f&ouml;r&auml;ndrade Sverige mest?</p>
+      </div>
+      <div class="tip-card">
+        <h4>F&auml;rgkodning</h4>
+        <p><span style="color:var(--concept);font-weight:700">Bl&aring;</span> = Viktiga begrepp<br>
+        <span style="color:var(--fact);font-weight:700">Gr&ouml;n</span> = Viktiga fakta<br>
+        <span style="color:var(--person);font-weight:700">R&ouml;d</span> = &Aring;rtal &amp; personer<br>
+        <span style="color:var(--funfact);font-weight:700">Gul</span> = Kul fakta</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAUSE BUTTON -->
+<button class="pause-btn" onclick="showPause()">Jag beh&ouml;ver en paus</button>
+
+<!-- PAUSE MODAL -->
+<div class="pause-overlay" id="pauseOverlay">
+  <div class="pause-modal">
+    <h2 id="pauseTitle">Pausdags!</h2>
+    <p id="pauseMsg">G&ouml;r 10 armh&auml;vningar! Eller om du f&ouml;redrar: spring till k&ouml;ket och tillbaka.</p>
+    <button onclick="closePause()">Jag &auml;r redo igen!</button>
+  </div>
+</div>
+
+<script>
+const PREFIX = 'buster-vasatiden-';
+const PAGE_ID = 'del6-02';
+let answered = false;
+let hintsUsed = 0;
+let startTime = Date.now();
+
+// Points
+function getPoints(){ return parseInt(localStorage.getItem(PREFIX+'points')||'0') }
+function addPoints(n){ const p=getPoints()+n; localStorage.setItem(PREFIX+'points',p.toString()); updatePointsDisplay(); return p; }
+function updatePointsDisplay(){ document.getElementById('pointsDisplay').textContent=getPoints()+' p'; }
+
+// Progress
+function getProgress(){ return JSON.parse(localStorage.getItem(PREFIX+'progress')||'{}') }
+function markComplete(){
+  const p=getProgress(); p[PAGE_ID]=true;
+  localStorage.setItem(PREFIX+'progress',JSON.stringify(p));
+  updateNav();
+}
+
+// Page stats
+function saveStats(pts){
+  const stats = JSON.parse(localStorage.getItem(PREFIX+'pageStats')||'{}');
+  stats[PAGE_ID] = {
+    time: Math.round((Date.now()-startTime)/1000),
+    hints: hintsUsed,
+    points: pts,
+    timestamp: new Date().toISOString()
+  };
+  localStorage.setItem(PREFIX+'pageStats', JSON.stringify(stats));
+}
+
+// Word count
+function updateWordCount(){
+  const text = document.getElementById('openAnswer').value.trim();
+  const words = text ? text.split(/\s+/).length : 0;
+  document.getElementById('wordCount').textContent = words + ' ord (minst 15)';
+  document.getElementById('submitBtn').disabled = words < 15;
+}
+
+// Submit open answer
+function submitOpen(){
+  document.getElementById('compareBox').classList.add('show');
+  document.getElementById('submitBtn').disabled = true;
+  document.getElementById('openAnswer').disabled = true;
+  // Save answer
+  const stats = JSON.parse(localStorage.getItem(PREFIX+'pageStats')||'{}');
+  stats['del6-02-open-answer'] = document.getElementById('openAnswer').value;
+  localStorage.setItem(PREFIX+'pageStats', JSON.stringify(stats));
+}
+
+// Self assessment
+function selfAssess(good){
+  if(answered) return;
+  answered = true;
+  const pts = good ? 20 : 10;
+  addPoints(pts);
+  document.getElementById('selfAssess').innerHTML = '<span style="color:var(--success);font-weight:600">+' + pts + ' po\u00e4ng!</span>';
+  document.querySelector('.celebration').textContent = 'Bra jobbat, Buster! +' + pts + ' po\u00e4ng';
+  document.querySelector('.celebration').classList.add('show');
+  document.getElementById('nextBtn').classList.remove('locked');
+  markComplete();
+  saveStats(pts);
+}
+
+// Nav update
+function updateNav(){
+  const progress = getProgress();
+  const pages = ['del6-01','del6-02','del6-quiz'];
+  let done = 0;
+  pages.forEach(p=>{
+    const el = document.getElementById('nav-'+p);
+    if(el && progress[p]){
+      el.classList.add('done');
+      el.querySelector('.icon').innerHTML = '&#10003;';
+      done++;
+    }
+  });
+  document.getElementById('progressText').textContent = done+'/'+pages.length;
+  document.getElementById('progressBar').style.width = Math.round(done/pages.length*100)+'%';
+}
+
+// Text size
+function changeSize(d){
+  const el = document.getElementById('contentArea');
+  const current = parseFloat(getComputedStyle(el).fontSize);
+  el.style.fontSize = (current + d*2) + 'px';
+}
+
+// Pause
+const pauseMsgs = [
+  {t:'R\u00f6r p\u00e5 dig!',m:'G\u00f6r 10 armh\u00e4vningar! Eller spring till k\u00f6ket och tillbaka.'},
+  {t:'Andas!',m:'St\u00e4ng \u00f6gonen. Andas in i 4 sekunder, h\u00e5ll i 4, andas ut i 4. G\u00f6r det 3 g\u00e5nger.'},
+  {t:'Kolla ut!',m:'Titta ut genom f\u00f6nstret i 30 sekunder. Kan du se n\u00e5got som r\u00f6r sig?'},
+  {t:'Str\u00e4cka!',m:'St\u00e4ll dig upp, str\u00e4ck armarna \u00f6ver huvudet och b\u00f6j dig ner mot t\u00e5rna.'},
+  {t:'Hj\u00e4rnvila!',m:'T\u00e4nk p\u00e5 din favorit-MTB-led. Visualisera hela banan fr\u00e5n start till m\u00e5l.'}
+];
+function showPause(){
+  const msg = pauseMsgs[Math.floor(Math.random()*pauseMsgs.length)];
+  document.getElementById('pauseTitle').textContent = msg.t;
+  document.getElementById('pauseMsg').textContent = msg.m;
+  document.getElementById('pauseOverlay').classList.add('show');
+}
+function closePause(){ document.getElementById('pauseOverlay').classList.remove('show') }
+
+// Check if already completed
+function checkPrevious(){
+  const progress = getProgress();
+  if(progress[PAGE_ID]){
+    answered = true;
+    document.getElementById('openAnswer').disabled = true;
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('nextBtn').classList.remove('locked');
+    document.querySelector('.celebration').textContent = 'Du har redan klarat denna sida!';
+    document.querySelector('.celebration').classList.add('show');
+  }
+}
+
+// Init
+updatePointsDisplay();
+updateNav();
+checkPrevious();
+</script>
+</body>
+</html>

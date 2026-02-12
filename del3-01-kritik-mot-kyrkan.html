@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kritik mot katolska kyrkan - Vasatiden</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f1f5f9;--card:#fff;--text:#1e293b;--muted:#64748b;
+  --accent:#2563eb;--success:#16a34a;--danger:#dc2626;--warning:#f59e0b;
+  --sidebar-bg:#1e293b;--sidebar-text:#e2e8f0;
+  --concept:#2563eb;--fact:#16a34a;--person:#dc2626;--funfact:#f59e0b;
+  --radius:10px;--shadow:0 2px 12px rgba(0,0,0,.08);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:18px;line-height:1.7;color:var(--text);background:var(--bg);display:flex;min-height:100vh}
+
+/* LEFT NAV */
+.sidebar{width:220px;background:var(--sidebar-bg);color:var(--sidebar-text);padding:20px 0;flex-shrink:0;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;overflow-y:auto}
+.sidebar .logo{padding:0 16px 16px;font-weight:800;font-size:1.1em;border-bottom:1px solid #334155}
+.sidebar .logo a{color:var(--sidebar-text);text-decoration:none}
+.sidebar nav{padding:12px 0;flex:1}
+.sidebar .section-title{padding:8px 16px;font-size:.7em;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;margin-top:8px}
+.sidebar a{display:flex;align-items:center;gap:8px;padding:7px 16px;color:#cbd5e1;text-decoration:none;font-size:.85em;transition:background .15s}
+.sidebar a:hover{background:#334155}
+.sidebar a.active{background:var(--accent);color:#fff;font-weight:600}
+.sidebar a .icon{width:18px;text-align:center;font-size:.85em}
+.sidebar a.done .icon{color:var(--success)}
+.sidebar .progress-box{padding:12px 16px;border-top:1px solid #334155;margin-top:auto}
+.sidebar .progress-box .bar{height:6px;background:#334155;border-radius:3px;overflow:hidden;margin-top:6px}
+.sidebar .progress-box .bar-fill{height:100%;background:var(--success);border-radius:3px;transition:width .3s}
+.sidebar .progress-box span{font-size:.7em;color:#94a3b8}
+
+/* MAIN */
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:12px 28px;background:var(--card);border-bottom:1px solid #e2e8f0}
+.topbar .breadcrumb{font-size:.8em;color:var(--muted)}
+.topbar .breadcrumb a{color:var(--accent);text-decoration:none}
+.topbar .points{display:flex;align-items:center;gap:6px;font-weight:700;color:var(--warning);font-size:.95em}
+.topbar .text-controls button{background:none;border:1px solid #e2e8f0;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:.8em;margin-left:4px}
+
+.content-area{flex:1;display:flex;max-width:100%}
+.content{flex:1;padding:28px 32px;max-width:680px}
+.content h1{font-size:1.5em;font-weight:800;margin-bottom:4px;color:var(--sidebar-bg)}
+.content .subtitle{font-size:.85em;color:var(--muted);margin-bottom:20px}
+
+.content p{margin-bottom:14px}
+.term{color:var(--concept);font-weight:700;cursor:help;border-bottom:2px dotted var(--concept);position:relative}
+.term:hover::after{content:attr(data-def);position:absolute;bottom:100%;left:0;background:var(--sidebar-bg);color:#fff;padding:8px 12px;border-radius:6px;font-size:.8em;font-weight:400;width:240px;z-index:10;line-height:1.4}
+.fact{color:var(--fact);font-weight:600}
+.person{color:var(--person);font-weight:600}
+.year{color:var(--danger);font-weight:700}
+
+.info-box{background:#eff6ff;border-left:4px solid var(--accent);padding:12px 16px;border-radius:0 var(--radius) var(--radius) 0;margin:16px 0;font-size:.9em}
+.fun-fact{background:#fefce8;border-left:4px solid var(--warning);padding:12px 16px;border-radius:0 var(--radius) var(--radius) 0;margin:16px 0;font-size:.9em}
+
+/* QUESTION */
+.question-box{background:var(--card);border:2px solid #e2e8f0;border-radius:var(--radius);padding:20px;margin:20px 0;box-shadow:var(--shadow)}
+.question-box h3{font-size:.95em;margin-bottom:12px;color:var(--sidebar-bg)}
+.question-box .badge{display:inline-block;font-size:.65em;padding:2px 8px;border-radius:4px;font-weight:700;margin-bottom:8px;text-transform:uppercase}
+.badge-e{background:#dcfce7;color:var(--success)}
+.badge-c{background:#dbeafe;color:var(--accent)}
+.badge-a{background:#fef3c7;color:#92400e}
+.options{display:flex;flex-direction:column;gap:8px}
+.option-btn{display:block;width:100%;text-align:left;padding:12px 16px;border:2px solid #e2e8f0;border-radius:8px;background:var(--card);cursor:pointer;font-size:.9em;font-family:inherit;transition:border-color .15s,background .15s}
+.option-btn:hover:not(:disabled){border-color:var(--accent);background:#f0f6ff}
+.option-btn.correct{border-color:var(--success);background:#dcfce7}
+.option-btn.wrong{border-color:var(--danger);background:#fee2e2}
+.option-btn:disabled{cursor:default}
+
+.feedback{margin-top:12px;padding:12px 16px;border-radius:8px;font-size:.9em;display:none}
+.feedback.show{display:block}
+.feedback.correct{background:#dcfce7;color:#166534}
+.feedback.wrong{background:#fee2e2;color:#991b1b}
+.feedback.info{background:#dbeafe;color:#1e40af}
+
+.hint-btn{background:none;border:none;color:var(--accent);cursor:pointer;font-size:.8em;margin-top:8px;font-family:inherit;text-decoration:underline}
+.hint-box{margin-top:8px;padding:8px 12px;background:#f0f6ff;border-radius:6px;font-size:.85em;display:none}
+.hint-box.show{display:block}
+
+/* NAV BUTTONS */
+.nav-buttons{display:flex;justify-content:space-between;align-items:center;margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f0}
+.nav-btn{padding:10px 24px;border-radius:8px;font-size:.9em;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;border:none;display:inline-flex;align-items:center;gap:6px}
+.nav-btn.secondary{background:#f1f5f9;color:var(--text)}
+.nav-btn.secondary:hover{background:#e2e8f0}
+.nav-btn.primary{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.25)}
+.nav-btn.primary:hover{background:#1d4ed8}
+.nav-btn:disabled,.nav-btn.locked{opacity:.35;cursor:not-allowed;pointer-events:none}
+
+.celebration{display:none;text-align:center;padding:12px;margin-top:12px;background:linear-gradient(135deg,#dcfce7,#dbeafe);border-radius:var(--radius);font-weight:600}
+.celebration.show{display:block}
+
+/* RIGHT PANEL */
+.right-panel{width:200px;padding:20px 14px;flex-shrink:0}
+.tip-card{background:#fffacd;border-radius:5px;padding:18px 15px;box-shadow:3px 3px 10px rgba(0,0,0,0.1),0 0 0 1px rgba(0,0,0,0.05);transform:rotate(-2deg);position:relative;margin-bottom:20px;margin-top:12px}
+.tip-card::before{content:"";position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:40px;height:15px;background:rgba(200,180,140,0.6);border-radius:2px}
+.tip-card h4{font-size:13px;font-weight:600;color:#7a6a4a;margin-bottom:10px;text-transform:none;letter-spacing:normal}
+.tip-card p{font-size:12px;line-height:1.5;color:#6a5a3a}
+.pause-btn{position:fixed;bottom:30px;right:30px;background:#c8f0d0;border:none;padding:15px 25px;border-radius:30px;font-family:inherit;font-size:15px;color:var(--text);cursor:pointer;box-shadow:0 4px 15px rgba(0,0,0,0.1);transition:all 0.2s ease;z-index:50}
+.pause-btn:hover{transform:scale(1.05);background:#88c498}
+
+/* PAUSE MODAL */
+.pause-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;align-items:center;justify-content:center}
+.pause-overlay.show{display:flex}
+.pause-modal{background:var(--card);border-radius:16px;padding:36px;text-align:center;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.pause-modal h2{font-size:1.3em;margin-bottom:12px}
+.pause-modal p{font-size:.95em;color:var(--muted);margin-bottom:20px}
+.pause-modal button{padding:12px 28px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:1em;cursor:pointer;font-family:inherit;font-weight:600}
+
+/* RESPONSIVE */
+@media(max-width:960px){
+  .sidebar{width:180px}
+  .main{margin-left:180px}
+  .right-panel{width:170px}
+}
+@media(max-width:768px){
+  .sidebar{display:none}
+  .main{margin-left:0}
+  .right-panel{display:none}
+  .content{padding:20px}
+}
+</style>
+</head>
+<body>
+
+<!-- LEFT SIDEBAR -->
+<div class="sidebar">
+  <div class="logo"><a href="index.html">Vasatiden</a></div>
+  <nav>
+    <div class="section-title">Del 3: Sverige blir protestantiskt</div>
+    <a href="del3-01-kritik-mot-kyrkan.html" class="active" id="nav-del3-01"><span class="icon">&#9654;</span> Kritik mot kyrkan</a>
+    <a href="del3-02-martin-luther.html" id="nav-del3-02"><span class="icon">&#9675;</span> Martin Luther</a>
+    <a href="del3-03-olaus-petri.html" id="nav-del3-03"><span class="icon">&#9675;</span> Olaus Petri</a>
+    <a href="del3-04-kungen-tar-kyrkans-saker.html" id="nav-del3-04"><span class="icon">&#9675;</span> Kungen tar kyrkans saker</a>
+    <a href="del3-05-klockupproret.html" id="nav-del3-05"><span class="icon">&#9675;</span> Klockupproret</a>
+    <a href="del3-quiz.html" id="nav-del3-quiz"><span class="icon">&#9675;</span> Quiz: Del 3</a>
+  </nav>
+  <div class="progress-box">
+    <span>Del 3: <span id="progressText">0/6</span></span>
+    <div class="bar"><div class="bar-fill" id="progressBar" style="width:0%"></div></div>
+  </div>
+</div>
+
+<!-- MAIN AREA -->
+<div class="main">
+  <div class="topbar">
+    <div class="breadcrumb"><a href="index.html">Vasatiden</a> &rsaquo; Del 3 &rsaquo; Kritik mot kyrkan</div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="text-controls"><button onclick="changeSize(-1)">A-</button><button onclick="changeSize(1)">A+</button></div>
+      <div class="points" id="pointsDisplay">0 p</div>
+    </div>
+  </div>
+
+  <div class="content-area">
+    <div class="content" id="contentArea">
+      <div class="subtitle">Del 3 &middot; Sida 1 av 5</div>
+      <h1>Kritik mot katolska kyrkan</h1>
+
+      <p>
+        N&auml;r <span class="person">Gustav Vasa</span> blev kung hade han stora skulder. Befrielsekriget mot danskarna hade kostat mycket. Dessutom ville han bygga upp en stark svensk stat &ndash; och det var dyrt.
+      </p>
+
+      <p>
+        Staten gjorde stora register &ouml;ver allt som &auml;gdes, f&ouml;r att kunna ta ut skatter. Den mesta skatten betalades fortfarande med varor som t.ex. sm&ouml;r.
+      </p>
+
+      <p>
+        Men det var sv&aring;rt att h&ouml;ja skatterna hur mycket som helst. B&ouml;nderna kunde bli arga och v&auml;gra betala. Kungen beh&ouml;vde hitta nya s&auml;tt att f&aring; pengar.
+      </p>
+
+      <p>
+        Under 1400- och 1500-talet v&auml;xte kritiken mot kyrkan p&aring; m&aring;nga h&aring;ll i Europa. Bland de stora upproren var det i B&ouml;hmen (nuvarande Tjeckien).
+      </p>
+
+      <p>
+        En sak som uppr&ouml;rde m&aring;nga var att kyrkan s&aring;lde n&aring;got som kallades <span class="term" data-def="Ett papper som kyrkan s&auml;lde. Den som k&ouml;pte det fick 'f&ouml;rl&aring;telse' f&ouml;r sina synder. Typ som att k&ouml;pa sig fri fr&aring;n straff.">avlatsbrev</span>. Den som k&ouml;pte avlatsbrev skulle inte straffas f&ouml;r sina synder. Till exempel kunde man f&aring; komma till himlen lite snabbare.
+      </p>
+
+      <div class="info-box">
+        <strong>T&auml;nk efter:</strong> Gustav Vasa beh&ouml;vde pengar. Kyrkan hade pengar. Ser du vart det h&auml;r &auml;r p&aring; v&auml;g?
+      </div>
+
+      <!-- QUESTION -->
+      <div class="question-box" id="questionBox">
+        <span class="badge badge-c">Niv&aring; C</span>
+        <h3>Varf&ouml;r var det ett problem att kyrkan s&aring;lde avlatsbrev?</h3>
+        <div class="options">
+          <button class="option-btn" onclick="answer(0)">Det var f&ouml;r billigt</button>
+          <button class="option-btn" onclick="answer(1)">Det innebar att rika kunde k&ouml;pa sig fria fr&aring;n straff medan fattiga inte hade r&aring;d &ndash; det var or&auml;ttvist</button>
+          <button class="option-btn" onclick="answer(2)">Folk ville inte ha papper</button>
+        </div>
+        <button class="hint-btn" onclick="showHint(0)">Ledtr&aring;d</button>
+        <div class="hint-box" id="hint0">T&auml;nk p&aring; vad det betyder att man kan K&Ouml;PA sig fri. Vem har r&aring;d?</div>
+        <div class="feedback correct" id="fbCorrect">Exakt! Det blev ett system d&auml;r de rika kunde g&ouml;ra vad de ville utan konsekvenser. Det uppr&ouml;rde m&aring;nga.</div>
+        <div class="feedback wrong" id="fbWrong">Inte riktigt. L&auml;s texten igen &ndash; vad innebar det att man kunde k&ouml;pa sig fri?</div>
+      </div>
+
+      <div class="celebration" id="celebration">Bra jobbat, Buster! +10 po&auml;ng</div>
+
+      <div class="nav-buttons">
+        <a href="index.html" class="nav-btn secondary">&larr; &Ouml;versikt</a>
+        <a href="del3-02-martin-luther.html" class="nav-btn primary locked" id="nextBtn">N&auml;sta: Martin Luther &rarr;</a>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+      <div class="tip-card">
+        <h4>Tips till Buster</h4>
+        <p>T&auml;nk dig att du kan k&ouml;pa dig fri fr&aring;n att plugga till provet. Bara rika hade r&aring;d. G&auml;nska or&auml;ttvist?</p>
+      </div>
+      <div class="tip-card">
+        <h4>F&auml;rgkodning</h4>
+        <p><span style="color:var(--concept);font-weight:700">Bl&aring;</span> = Viktiga begrepp<br>
+        <span style="color:var(--fact);font-weight:700">Gr&ouml;n</span> = Viktiga fakta<br>
+        <span style="color:var(--person);font-weight:700">R&ouml;d</span> = &Aring;rtal &amp; personer<br>
+        <span style="color:var(--funfact);font-weight:700">Gul</span> = Kul fakta</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAUSE BUTTON -->
+<button class="pause-btn" onclick="showPause()">Jag beh&ouml;ver en paus</button>
+
+<!-- PAUSE MODAL -->
+<div class="pause-overlay" id="pauseOverlay">
+  <div class="pause-modal">
+    <h2 id="pauseTitle">Pausdags!</h2>
+    <p id="pauseMsg">G&ouml;r 10 armh&auml;vningar!</p>
+    <button onclick="closePause()">Jag &auml;r redo igen!</button>
+  </div>
+</div>
+
+<script>
+const PREFIX = 'buster-vasatiden-';
+const PAGE_ID = 'del3-01';
+const CORRECT_ANSWER = 1;
+let answered = false;
+let hintsUsed = 0;
+let attempts = 0;
+let startTime = Date.now();
+
+// Points
+function getPoints(){ return parseInt(localStorage.getItem(PREFIX+'points')||'0') }
+function addPoints(n){ const p=getPoints()+n; localStorage.setItem(PREFIX+'points',p.toString()); updatePointsDisplay(); return p; }
+function updatePointsDisplay(){ document.getElementById('pointsDisplay').textContent=getPoints()+' p'; }
+
+// Progress
+function getProgress(){ return JSON.parse(localStorage.getItem(PREFIX+'progress')||'{}') }
+function markComplete(){
+  const p=getProgress(); p[PAGE_ID]=true;
+  localStorage.setItem(PREFIX+'progress',JSON.stringify(p));
+  updateNav();
+}
+
+// Page stats
+function saveStats(correct, pts){
+  const stats = JSON.parse(localStorage.getItem(PREFIX+'pageStats')||'{}');
+  stats[PAGE_ID] = {
+    time: Math.round((Date.now()-startTime)/1000),
+    hints: hintsUsed,
+    attempts: attempts,
+    correct: correct,
+    points: pts,
+    timestamp: new Date().toISOString()
+  };
+  localStorage.setItem(PREFIX+'pageStats', JSON.stringify(stats));
+}
+
+// Answer
+function answer(idx){
+  if(answered) return;
+  attempts++;
+  const btns = document.querySelectorAll('.option-btn');
+  if(idx === CORRECT_ANSWER){
+    answered = true;
+    btns[idx].classList.add('correct');
+    btns.forEach(b=>b.disabled=true);
+    document.getElementById('fbCorrect').classList.add('show');
+
+    const pts = hintsUsed > 0 ? 5 : 10;
+    addPoints(pts);
+    document.querySelector('.celebration').textContent = 'Bra jobbat, Buster! +' + pts + ' po\u00e4ng';
+    document.querySelector('.celebration').classList.add('show');
+    document.getElementById('nextBtn').classList.remove('locked');
+    markComplete();
+    saveStats(true, pts);
+  } else {
+    btns[idx].classList.add('wrong');
+    btns[idx].disabled = true;
+    document.getElementById('fbWrong').classList.add('show');
+    setTimeout(()=>document.getElementById('fbWrong').classList.remove('show'),2500);
+  }
+}
+
+// Hints
+function showHint(n){
+  hintsUsed++;
+  document.getElementById('hint'+n).classList.add('show');
+}
+
+// Nav update
+function updateNav(){
+  const progress = getProgress();
+  const pages = ['del3-01','del3-02','del3-03','del3-04','del3-05','del3-quiz'];
+  let done = 0;
+  pages.forEach(p=>{
+    const el = document.getElementById('nav-'+p);
+    if(el && progress[p]){
+      el.classList.add('done');
+      el.querySelector('.icon').innerHTML = '&#10003;';
+      done++;
+    }
+  });
+  document.getElementById('progressText').textContent = done+'/'+pages.length;
+  document.getElementById('progressBar').style.width = Math.round(done/pages.length*100)+'%';
+}
+
+// Text size
+function changeSize(d){
+  const el = document.getElementById('contentArea');
+  const current = parseFloat(getComputedStyle(el).fontSize);
+  el.style.fontSize = (current + d*2) + 'px';
+}
+
+// Pause
+const pauseMsgs = [
+  {t:'MTB-dags!',m:'Blunda och t\u00e4nk p\u00e5 din favoritcykelled. Visualisera varje kurva och hopp fr\u00e5n start till m\u00e5l.'},
+  {t:'Puckelpist!',m:'St\u00e4ll dig upp och l\u00e5tsas \u00e5ka puckelpist i 20 sekunder. Kn\u00e4na fj\u00e4drar!'},
+  {t:'Skid\u00e5kning!',m:'G\u00f6r 15 skid\u00e5kningsr\u00f6relser fr\u00e5n sida till sida. K\u00e4nn hur benen vaknar!'},
+  {t:'Geografi-paus!',m:'Kan du n\u00e4mna 5 l\u00e4nder i Europa p\u00e5 10 sekunder? Starta klockan!'},
+  {t:'Havspaus!',m:'Andas som v\u00e5gorna: in l\u00e5ngsamt i 4 sek, ut l\u00e5ngsamt i 6 sek. Tre g\u00e5nger.'}
+];
+function showPause(){
+  const msg = pauseMsgs[Math.floor(Math.random()*pauseMsgs.length)];
+  document.getElementById('pauseTitle').textContent = msg.t;
+  document.getElementById('pauseMsg').textContent = msg.m;
+  document.getElementById('pauseOverlay').classList.add('show');
+}
+function closePause(){ document.getElementById('pauseOverlay').classList.remove('show') }
+
+// Check if already completed
+function checkPrevious(){
+  const progress = getProgress();
+  if(progress[PAGE_ID]){
+    answered = true;
+    const btns = document.querySelectorAll('.option-btn');
+    btns[CORRECT_ANSWER].classList.add('correct');
+    btns.forEach(b=>b.disabled=true);
+    document.getElementById('fbCorrect').classList.add('show');
+    document.getElementById('nextBtn').classList.remove('locked');
+    document.querySelector('.celebration').textContent = 'Du har redan klarat denna sida!';
+    document.querySelector('.celebration').classList.add('show');
+  }
+}
+
+// Init
+updatePointsDisplay();
+updateNav();
+checkPrevious();
+</script>
+</body>
+</html>
